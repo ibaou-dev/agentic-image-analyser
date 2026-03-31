@@ -33,7 +33,34 @@ uv run agentic-vision precheck
 
 Copy `.env.example` → `.env` and fill in the relevant key(s).
 
-**Gemini CLI requirement**: The Gemini CLI (`gemini`) is needed for initial OAuth login and for automatic token refresh. If you set `GEMINI_CLI_OAUTH_CLIENT_ID` + `GEMINI_CLI_OAUTH_CLIENT_SECRET` in `.env`, token refresh works without the CLI installed. The credentials file (`~/.gemini/oauth_creds.json`) alone is sufficient to call the API if the token has not expired.
+**Gemini CLI not required.** `agentic-vision login` runs a full PKCE OAuth flow itself — no `gemini` CLI needed. Token refresh also works without the CLI (the application credentials are built-in).
+
+### `gemini-login` — standalone credential tool
+
+`gemini_login.py` has no dependencies on the rest of this project (only `httpx` + stdlib). Use it anywhere you need to generate or renew `~/.gemini/oauth_creds.json`:
+
+```bash
+# Via the package entry point
+uv run gemini-login
+
+# Force re-authentication
+uv run gemini-login --force
+
+# Write to a custom path
+uv run gemini-login --creds-path /tmp/my-creds.json
+
+# JSON output (for scripting)
+uv run gemini-login --json
+
+# As a plain Python script (copy gemini_login.py anywhere — needs httpx)
+python gemini_login.py --force
+```
+
+**How it works:**
+- **Desktop**: opens your browser automatically, starts a local server on `:8085` to capture the OAuth redirect — no manual steps.
+- **WSL2 / SSH / headless**: prints the authorization URL; paste the redirect URL (or just the code) back into the terminal.
+
+Credentials are written in Gemini CLI format (`access_token`, `refresh_token`, `expiry_date`, …) and are immediately usable by the `gemini` CLI, `agentic-vision`, or any other tool that reads `~/.gemini/oauth_creds.json`.
 
 ---
 
