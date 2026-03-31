@@ -38,6 +38,7 @@ dev = [
 
 [project.scripts]
 agentic-vision = "agentic_vision.cli:main"
+gemini-login = "agentic_vision.auth.gemini_login:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentic_vision"]

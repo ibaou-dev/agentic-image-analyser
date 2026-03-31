@@ -351,81 +351,34 @@ def _cmd_precheck(args: argparse.Namespace) -> int:
 
 def _cmd_login(args: argparse.Namespace) -> int:
     """
-    Authenticate with Gemini OAuth.
+    Authenticate with Gemini via a full PKCE OAuth flow (no Gemini CLI required).
 
-    Strategy:
-      1. If credentials exist and are valid (and --force not set) → report OK.
-      2. If gemini CLI is in PATH → delegate to `gemini auth login`.
-      3. Otherwise → print manual instructions.
+    Desktop:  opens browser automatically + listens on localhost:8085 for the callback.
+    WSL2/SSH: prints authorization URL; user pastes back the redirect URL or code.
     """
-    import shutil
-    import subprocess
+    from agentic_vision.auth.gemini_login import LoginError, login
 
-    from agentic_vision.auth.base import AuthError
-    from agentic_vision.auth.gemini_oauth import GeminiOAuthProvider
-
-    oauth = GeminiOAuthProvider()
     force = getattr(args, "force", False)
+    pretty = _is_pretty(args)
 
-    # Check current state unless --force
-    if not force and oauth.is_available():
-        try:
-            token = oauth.get_access_token()
-            _json_out(
-                {
-                    "status": "ok",
-                    "message": "Already authenticated. Use --force to re-authenticate.",
-                    "token_preview": f"{token[:8]}…",
-                },
-                pretty=_is_pretty(args),
-            )
-            return 0
-        except AuthError:
-            pass  # fall through to re-auth
-
-    gemini_bin = shutil.which("gemini")
-    if gemini_bin:
+    try:
+        result = login(force=force, verbose=True)
         _json_out(
             {
-                "status": "delegating",
-                "message": f"Delegating to '{gemini_bin} auth login' …",
+                "status": "ok",
+                "message": "Authentication successful.",
+                "email": result.email,
+                "creds_path": str(result.creds_path),
             },
-            pretty=_is_pretty(args),
+            pretty=pretty,
         )
-        result = subprocess.run([gemini_bin, "auth", "login"], check=False)
-        if result.returncode == 0:
-            _json_out(
-                {"status": "ok", "message": "Authentication successful."}, pretty=_is_pretty(args)
-            )
-            return 0
-        _json_out(
-            {
-                "status": "error",
-                "message": f"'gemini auth login' exited with code {result.returncode}.",
-            },
-            pretty=_is_pretty(args),
-        )
+        return 0
+    except LoginError as exc:
+        _json_out({"status": "error", "error": str(exc)}, pretty=pretty)
         return 3
-
-    # No CLI available — print instructions
-    creds_path = oauth._creds_path
-    _json_out(
-        {
-            "status": "error",
-            "message": (
-                "Gemini CLI not found. To authenticate:\n"
-                "  Option A: Install Gemini CLI (https://github.com/google-gemini/gemini-cli) "
-                "and run 'gemini auth login'.\n"
-                f"  Option B: Manually place OAuth credentials at {creds_path} "
-                "(fields: access_token, refresh_token, expiry_date, token_type).\n"
-                "  Option C: Set GEMINI_CLI_OAUTH_CLIENT_ID + GEMINI_CLI_OAUTH_CLIENT_SECRET "
-                "in .env to enable token refresh without the CLI."
-            ),
-            "creds_path": str(creds_path),
-        },
-        pretty=_is_pretty(args),
-    )
-    return 3
+    except KeyboardInterrupt:
+        _json_out({"status": "error", "error": "Login cancelled."}, pretty=pretty)
+        return 3
 
 
 def _cmd_export_schema(_args: argparse.Namespace) -> int:

@@ -18,8 +18,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
-import shutil
 import time
 from pathlib import Path
 from typing import Any
@@ -39,33 +37,24 @@ def _default_creds_path() -> Path:
 
 def _extract_client_credentials() -> tuple[str, str] | None:
     """
-    Extract OAuth client_id and client_secret from the installed Gemini CLI.
+    Return the OAuth client_id and client_secret for token refresh.
 
     Tries in order:
       1. Environment variables GEMINI_CLI_OAUTH_CLIENT_ID / GEMINI_CLI_OAUTH_CLIENT_SECRET
-      2. Searching for oauth2.js in the Gemini CLI package tree
+      2. Well-known Gemini CLI application credentials (same ones embedded in the
+         CLI binary and published in community tools like opencode-gemini-auth)
     """
     client_id = os.environ.get("GEMINI_CLI_OAUTH_CLIENT_ID")
     client_secret = os.environ.get("GEMINI_CLI_OAUTH_CLIENT_SECRET")
     if client_id and client_secret:
         return client_id, client_secret
 
-    gemini_bin = shutil.which("gemini")
-    if not gemini_bin:
-        return None
+    # The Gemini CLI OAuth application credentials are semi-public (embedded in the
+    # CLI binary, published in opencode-gemini-auth/src/constants.ts, etc.).
+    # They identify the application, not the user.
+    from agentic_vision.auth.gemini_login import _CLIENT_ID, _CLIENT_SECRET
 
-    search_root = Path(gemini_bin).resolve().parent.parent
-    for oauth_js in search_root.rglob("oauth2.js"):
-        try:
-            text = oauth_js.read_text(errors="ignore")
-        except OSError:
-            continue
-        ids = re.findall(r"(\d+-[a-z0-9]+\.apps\.googleusercontent\.com)", text)
-        secrets = re.findall(r"(GOCSPX-[A-Za-z0-9_-]+)", text)
-        if ids and secrets:
-            return ids[0], secrets[0]
-
-    return None
+    return _CLIENT_ID, _CLIENT_SECRET
 
 
 class GeminiOAuthProvider(AuthProvider):
