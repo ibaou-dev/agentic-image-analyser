@@ -1,0 +1,145 @@
+{
+  "$defs": {
+    "FallbackConfig": {
+      "properties": {
+        "mode": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "llm-prompt",
+            "disabled"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "auto_on_errors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Auto On Errors",
+          "type": "array"
+        }
+      },
+      "title": "FallbackConfig",
+      "type": "object"
+    },
+    "OutputConfig": {
+      "properties": {
+        "base_dir": {
+          "default": "./image-analyses",
+          "description": "Directory where analysis reports are saved",
+          "title": "Base Dir",
+          "type": "string"
+        },
+        "summary_max_tokens": {
+          "default": 300,
+          "maximum": 2000,
+          "minimum": 50,
+          "title": "Summary Max Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "OutputConfig",
+      "type": "object"
+    },
+    "PromptsConfig": {
+      "properties": {
+        "default_ui_analysis": {
+          "default": "Analyse this screenshot and report:\n1. Layout structure and visual hierarchy\n2. UI components present (buttons, forms, navigation, cards, etc.)\n3. Colour scheme and typography observations\n4. Visual anomalies, misalignments, or rendering issues\n5. Mobile/responsive design indicators\n6. Key content areas and their apparent purpose\n\nBe specific and concise. Focus on what is visually observable.",
+          "title": "Default Ui Analysis",
+          "type": "string"
+        },
+        "default_generic": {
+          "default": "Describe this image in detail, noting key elements, visible text, and any technical content.",
+          "title": "Default Generic",
+          "type": "string"
+        }
+      },
+      "title": "PromptsConfig",
+      "type": "object"
+    },
+    "ProviderConfig": {
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "enum": [
+                "gemini-oauth",
+                "gemini-api",
+                "openai",
+                "anthropic"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Name"
+        },
+        "priority_model": {
+          "title": "Priority Model",
+          "type": "string"
+        },
+        "fallback_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Model"
+        },
+        "rate_limit_rpm": {
+          "default": 60,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Rate Limit Rpm",
+          "type": "integer"
+        },
+        "rate_limit_tpm": {
+          "default": 250000,
+          "maximum": 10000000,
+          "minimum": 1000,
+          "title": "Rate Limit Tpm",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "priority_model"
+      ],
+      "title": "ProviderConfig",
+      "type": "object"
+    }
+  },
+  "description": "Loaded from agentic-vision.toml.",
+  "properties": {
+    "output": {
+      "$ref": "#/$defs/OutputConfig"
+    },
+    "fallback": {
+      "$ref": "#/$defs/FallbackConfig"
+    },
+    "providers": {
+      "items": {
+        "$ref": "#/$defs/ProviderConfig"
+      },
+      "title": "Providers",
+      "type": "array"
+    },
+    "prompts": {
+      "$ref": "#/$defs/PromptsConfig"
+    }
+  },
+  "title": "AppConfig",
+  "type": "object"
+}

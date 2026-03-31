@@ -1,0 +1,82 @@
+# =============================================================================
+# agentic-vision — Configuration
+# Copy this file to agentic-vision.toml and customise as needed.
+# agentic-vision.toml is gitignored — keep secrets in .env instead.
+# Validate against agentic-vision.schema.json for IDE autocompletion.
+# =============================================================================
+
+# ─── Output settings ──────────────────────────────────────────────────────────
+[output]
+# Directory where analysis reports are saved (relative to project root or absolute)
+base_dir = "./image-analyses"
+# Maximum tokens for the summary returned to the calling agent
+summary_max_tokens = 300
+
+# ─── Fallback behaviour ───────────────────────────────────────────────────────
+[fallback]
+# "auto"        — fall back automatically on listed error types
+# "llm-prompt"  — ask an LLM to decide (uses ANTHROPIC_API_KEY or first available provider)
+# "disabled"    — never fall back; fail hard and surface the error
+mode = "auto"
+# Error categories that trigger an automatic fallback
+auto_on_errors = ["rate_limit", "auth_failure", "model_unavailable", "timeout"]
+
+# ─── Prompt templates ─────────────────────────────────────────────────────────
+[prompts]
+# Default prompt for UI/UX screenshot analysis
+default_ui_analysis = """
+Analyse this screenshot and report:
+1. Layout structure and visual hierarchy
+2. UI components present (buttons, forms, navigation, cards, etc.)
+3. Colour scheme and typography observations
+4. Visual anomalies, misalignments, or rendering issues
+5. Mobile/responsive design indicators
+6. Key content areas and their apparent purpose
+
+Be specific and concise. Focus on what is visually observable.
+"""
+
+# Default prompt for generic image analysis
+default_generic = "Describe this image in detail, noting key elements, visible text, and any technical content."
+
+# ─── Providers ────────────────────────────────────────────────────────────────
+# Priority: providers are tried in the order they appear below.
+# The first enabled provider with valid credentials is used.
+
+[[providers]]
+name = "gemini-oauth"
+# Uses Gemini CLI OAuth token (~/.gemini/oauth_creds.json) + Code Assist endpoint.
+# Requires: gemini CLI installed and authenticated (run `gemini auth login`).
+# GOOGLE_CLOUD_PROJECT env var must be set (or google_project_id in .env).
+priority_model = "gemini-2.5-pro"
+fallback_model = "gemini-2.5-flash"
+rate_limit_rpm = 60
+rate_limit_tpm = 250_000
+enabled = true
+
+[[providers]]
+name = "gemini-api"
+# Uses GEMINI_API_KEY via the official google-generativeai SDK.
+priority_model = "gemini-2.5-pro"
+fallback_model = "gemini-2.5-flash"
+rate_limit_rpm = 60
+rate_limit_tpm = 1_000_000
+enabled = true
+
+# Uncomment to enable OpenAI-compatible providers (OpenAI, local LLMs, proxies):
+# [[providers]]
+# name = "openai"
+# priority_model = "gpt-4o"
+# fallback_model = "gpt-4o-mini"
+# rate_limit_rpm = 500
+# rate_limit_tpm = 800_000
+# enabled = false
+
+# Uncomment to enable Anthropic Claude vision:
+# [[providers]]
+# name = "anthropic"
+# priority_model = "claude-sonnet-4-6"
+# fallback_model = "claude-haiku-4-5"
+# rate_limit_rpm = 50
+# rate_limit_tpm = 100_000
+# enabled = false

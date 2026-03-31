@@ -1,0 +1,56 @@
+# === SECRETS & LOCAL CONFIG ===
+.env
+agentic-vision.toml
+
+# Keep templates/examples
+!.env.example
+!agentic-vision.toml.example
+!agentic-vision.schema.json
+
+# === ANALYSIS OUTPUT ===
+image-analyses/
+
+# === REFERENCE / INSPIRATION (read-only, not part of this project) ===
+.inspiration/
+
+# === PYTHON / UV ===
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Type checkers & linters
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Test & coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# uv
+uv.lock.bak
+
+# === EDITORS ===
+.vscode/settings.json
+.vscode/*.code-workspace
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === MISC ===
+*.log
+*.tmp
