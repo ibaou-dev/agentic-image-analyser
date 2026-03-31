@@ -1,4 +1,5 @@
 """Unit tests for analysis output writer."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -169,11 +170,21 @@ class TestSaveAnalysis:
         fake_img.write_bytes(b"x")
 
         r1 = save_analysis(
-            image_path=str(fake_img), full_analysis="A", provider="p",
-            model="m", prompt="q", base_dir=tmp_path / "out", duration_seconds=1.0,
+            image_path=str(fake_img),
+            full_analysis="A",
+            provider="p",
+            model="m",
+            prompt="q",
+            base_dir=tmp_path / "out",
+            duration_seconds=1.0,
         )
         r2 = save_analysis(
-            image_path=str(fake_img), full_analysis="B", provider="p",
-            model="m", prompt="q", base_dir=tmp_path / "out", duration_seconds=1.0,
+            image_path=str(fake_img),
+            full_analysis="B",
+            provider="p",
+            model="m",
+            prompt="q",
+            base_dir=tmp_path / "out",
+            duration_seconds=1.0,
         )
         assert Path(r1.analysis_file).name == Path(r2.analysis_file).name

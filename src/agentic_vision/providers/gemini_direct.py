@@ -3,6 +3,7 @@ Gemini direct provider using the google-generativeai SDK and an API key.
 
 Uses generativelanguage.googleapis.com via the official SDK — no OAuth needed.
 """
+
 from __future__ import annotations
 
 import base64
@@ -79,6 +80,7 @@ class GeminiDirectProvider(VisionProvider):
     def list_models(self) -> list[ModelInfo]:
         try:
             import google.generativeai as genai
+
             api_key = self._auth.get_access_token()
             genai.configure(api_key=api_key)
             models = [
@@ -88,11 +90,9 @@ class GeminiDirectProvider(VisionProvider):
                 and "vision" in getattr(m, "description", "").lower()
             ]
             return models or [
-                ModelInfo(name=m, provider=self.name, supports_vision=True)
-                for m in _DEFAULT_MODELS
+                ModelInfo(name=m, provider=self.name, supports_vision=True) for m in _DEFAULT_MODELS
             ]
         except Exception:
             return [
-                ModelInfo(name=m, provider=self.name, supports_vision=True)
-                for m in _DEFAULT_MODELS
+                ModelInfo(name=m, provider=self.name, supports_vision=True) for m in _DEFAULT_MODELS
             ]

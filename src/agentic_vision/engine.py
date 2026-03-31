@@ -1,6 +1,7 @@
 """
 Analysis engine — orchestrates auth, provider selection, rate limiting, fallback, and output.
 """
+
 from __future__ import annotations
 
 import time
@@ -9,7 +10,7 @@ from pathlib import Path
 from agentic_vision.config import Config, ProviderConfig
 from agentic_vision.fallback import FallbackDecider, FallbackExhaustedError
 from agentic_vision.output import AnalysisResult, ErrorResult, save_analysis
-from agentic_vision.providers.base import ProviderError, VisionProvider
+from agentic_vision.providers.base import ProviderError, RateLimitError, VisionProvider
 from agentic_vision.providers.code_assist import CodeAssistProvider
 from agentic_vision.rate_limiter import RateLimiter
 
@@ -42,7 +43,7 @@ def _estimate_tokens_for_image(image_path: str) -> int:
 
 
 def _default_provider_config() -> ProviderConfig:
-    return ProviderConfig(name="gemini-oauth", priority_model="gemini-2.5-pro")
+    return ProviderConfig(name="gemini-oauth", priority_model="gemini-3-flash-preview")
 
 
 class AnalysisEngine:
@@ -79,7 +80,7 @@ class AnalysisEngine:
             if cfg is None:
                 cfg = ProviderConfig(
                     name=provider_name,
-                    priority_model=model_name or "gemini-2.5-pro",
+                    priority_model=model_name or "gemini-3-flash-preview",
                 )
         elif candidates:
             cfg = candidates[0]
@@ -104,7 +105,7 @@ class AnalysisEngine:
         model_name: str | None = None,
     ) -> list[AnalysisResult | ErrorResult]:
         """
-        Analyse one or more images, applying fallback if configured.
+        Analyse one or more images, applying backoff + fallback if configured.
 
         Args:
             image_paths:   List of absolute paths to image files.
@@ -158,19 +159,46 @@ class AnalysisEngine:
                 duration_seconds=time.monotonic() - start,
             )
 
-        # Analysis with fallback
+        # First attempt
+        last_exc: Exception | None = None
         try:
             full_analysis = provider.analyze_image(image_path, prompt, model)
+            last_exc = None
         except Exception as exc:
-            if not self._fallback_decider.should_fallback(exc, cfg):
+            last_exc = exc
+
+        # Backoff retries on rate limit (before considering fallback)
+        if last_exc is not None and isinstance(last_exc, RateLimitError):
+            backoff_cfg = self._config.backoff
+            if backoff_cfg.enabled:
+                for delay in backoff_cfg.delays:
+                    # Use API-provided Retry-After if available and within cap
+                    if backoff_cfg.respect_retry_after and isinstance(last_exc, RateLimitError):
+                        suggested = last_exc.retry_after
+                        if suggested is not None:
+                            delay = min(suggested, backoff_cfg.max_retry_after)
+                    time.sleep(delay)
+                    try:
+                        full_analysis = provider.analyze_image(image_path, prompt, model)
+                        last_exc = None
+                        break
+                    except RateLimitError as retry_exc:
+                        last_exc = retry_exc
+                    except Exception as other_exc:
+                        last_exc = other_exc
+                        break  # non-rate-limit error: stop retrying, go to fallback
+
+        # If still failing after backoff, try fallback
+        if last_exc is not None:
+            primary_err = str(last_exc)
+            if not self._fallback_decider.should_fallback(last_exc, cfg):
                 return ErrorResult(
                     image_path=image_path,
                     provider=provider.name,
                     model=model,
-                    error=str(exc),
+                    error=primary_err,
                     duration_seconds=time.monotonic() - start,
                 )
-            # Attempt fallback
             try:
                 fallback_cfg, fallback_model = self._fallback_decider.next_option(
                     cfg,
@@ -183,9 +211,7 @@ class AnalysisEngine:
 
                 fallback_rl = self._get_rate_limiter(fallback_cfg)
                 fallback_rl.acquire(estimated_tokens=estimated_tokens, timeout=15.0)
-                full_analysis = fallback_provider.analyze_image(
-                    image_path, prompt, fallback_model
-                )
+                full_analysis = fallback_provider.analyze_image(image_path, prompt, fallback_model)
                 # Use fallback provider/model in the result
                 provider = fallback_provider
                 model = fallback_model
@@ -194,7 +220,7 @@ class AnalysisEngine:
                     image_path=image_path,
                     provider=provider.name,
                     model=model,
-                    error=f"{exc} | fallback also failed: {fallback_exc}",
+                    error=f"{primary_err} | fallback also failed: {fallback_exc}",
                     duration_seconds=time.monotonic() - start,
                 )
 

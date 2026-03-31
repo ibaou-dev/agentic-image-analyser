@@ -10,6 +10,7 @@ Usage:
     limiter.acquire()               # blocks until RPM bucket allows
     limiter.acquire(tokens=1500)    # blocks until both RPM + TPM allow
 """
+
 from __future__ import annotations
 
 import threading

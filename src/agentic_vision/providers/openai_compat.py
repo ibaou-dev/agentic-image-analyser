@@ -1,4 +1,5 @@
 """OpenAI-compatible vision provider (OpenAI, local LLMs, proxies)."""
+
 from __future__ import annotations
 
 import base64
@@ -57,13 +58,15 @@ class OpenAICompatVisionProvider(VisionProvider):
             client = OpenAI(api_key=api_key, base_url=self._auth.base_url, timeout=timeout)
             response = client.chat.completions.create(
                 model=model,
-                messages=[{
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": data_url}},
-                    ],
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    }
+                ],
             )
             return response.choices[0].message.content or ""
         except Exception as exc:
@@ -79,11 +82,11 @@ class OpenAICompatVisionProvider(VisionProvider):
     def list_models(self) -> list[ModelInfo]:
         try:
             from openai import OpenAI
+
             client = OpenAI(api_key=self._auth.get_access_token(), base_url=self._auth.base_url)
             models = client.models.list()
             return [
-                ModelInfo(name=m.id, provider=self.name, supports_vision=True)
-                for m in models.data
+                ModelInfo(name=m.id, provider=self.name, supports_vision=True) for m in models.data
             ]
         except Exception:
             return [ModelInfo(name=m, provider=self.name) for m in _DEFAULT_MODELS]

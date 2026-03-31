@@ -1,5 +1,40 @@
 {
   "$defs": {
+    "BackoffConfig": {
+      "description": "Retry-with-backoff settings applied before falling back to a secondary provider.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "delays": {
+          "description": "Seconds to wait between successive retries (3 attempts by default)",
+          "items": {
+            "minimum": 0.0,
+            "type": "number"
+          },
+          "title": "Delays",
+          "type": "array"
+        },
+        "respect_retry_after": {
+          "default": true,
+          "description": "Honour the Retry-After value returned by the API when present",
+          "title": "Respect Retry After",
+          "type": "boolean"
+        },
+        "max_retry_after": {
+          "default": 60.0,
+          "description": "Cap on the API-provided Retry-After value to prevent indefinite waits",
+          "maximum": 300.0,
+          "minimum": 1.0,
+          "title": "Max Retry After",
+          "type": "number"
+        }
+      },
+      "title": "BackoffConfig",
+      "type": "object"
+    },
     "FallbackConfig": {
       "properties": {
         "mode": {
@@ -128,6 +163,9 @@
     },
     "fallback": {
       "$ref": "#/$defs/FallbackConfig"
+    },
+    "backoff": {
+      "$ref": "#/$defs/BackoffConfig"
     },
     "providers": {
       "items": {

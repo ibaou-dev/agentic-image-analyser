@@ -1,4 +1,5 @@
 """Unit tests for auth resolver and simple auth providers."""
+
 from __future__ import annotations
 
 import os
@@ -87,23 +88,41 @@ class TestAuthResolver:
         with patch.dict(os.environ, {}, clear=True):
             resolver = AuthResolver()
             # Force no key by patching is_available
-            with patch(
-                "agentic_vision.auth.gemini_api_key.GeminiApiKeyProvider.is_available",
-                return_value=False,
-            ), pytest.raises(AuthError, match="not configured"):
+            with (
+                patch(
+                    "agentic_vision.auth.gemini_api_key.GeminiApiKeyProvider.is_available",
+                    return_value=False,
+                ),
+                pytest.raises(AuthError, match="not configured"),
+            ):
                 resolver.resolve_by_name("gemini-api")
 
     def test_all_available_empty_when_no_auth(self, tmp_path: object) -> None:
         with (
-            patch.dict(os.environ, {
-                "GEMINI_API_KEY": "",
-                "OPENAI_API_KEY": "",
-                "ANTHROPIC_API_KEY": "",
-            }),
-            patch("agentic_vision.auth.gemini_oauth.GeminiOAuthProvider.is_available", return_value=False),
-            patch("agentic_vision.auth.gemini_api_key.GeminiApiKeyProvider.is_available", return_value=False),
-            patch("agentic_vision.auth.openai_compat.OpenAICompatProvider.is_available", return_value=False),
-            patch("agentic_vision.auth.anthropic_api.AnthropicApiProvider.is_available", return_value=False),
+            patch.dict(
+                os.environ,
+                {
+                    "GEMINI_API_KEY": "",
+                    "OPENAI_API_KEY": "",
+                    "ANTHROPIC_API_KEY": "",
+                },
+            ),
+            patch(
+                "agentic_vision.auth.gemini_oauth.GeminiOAuthProvider.is_available",
+                return_value=False,
+            ),
+            patch(
+                "agentic_vision.auth.gemini_api_key.GeminiApiKeyProvider.is_available",
+                return_value=False,
+            ),
+            patch(
+                "agentic_vision.auth.openai_compat.OpenAICompatProvider.is_available",
+                return_value=False,
+            ),
+            patch(
+                "agentic_vision.auth.anthropic_api.AnthropicApiProvider.is_available",
+                return_value=False,
+            ),
         ):
             resolver = AuthResolver()
             assert resolver.all_available() == []

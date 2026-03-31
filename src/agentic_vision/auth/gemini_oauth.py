@@ -13,6 +13,7 @@ Credential file fields:
     token_type     str
     id_token       str   (optional)
 """
+
 from __future__ import annotations
 
 import json
@@ -97,8 +98,7 @@ class GeminiOAuthProvider(AuthProvider):
     def _load_creds(self) -> dict[str, Any]:
         if not self._creds_path.exists():
             raise AuthError(
-                f"Gemini OAuth credentials not found at {self._creds_path}. "
-                "Run: gemini auth login"
+                f"Gemini OAuth credentials not found at {self._creds_path}. Run: gemini auth login"
             )
         with self._creds_path.open() as f:
             data: dict[str, Any] = json.load(f)
@@ -131,16 +131,29 @@ class GeminiOAuthProvider(AuthProvider):
                 },
                 timeout=15,
             )
-            resp.raise_for_status()
         except httpx.HTTPError as exc:
-            raise AuthError(f"Token refresh failed: {exc}") from exc
+            raise AuthError(f"Token refresh failed (network error): {exc}") from exc
+
+        if not resp.is_success:
+            # Parse Google's error response to give a specific message
+            try:
+                err_body = resp.json()
+                err_code = err_body.get("error", "")
+                err_desc = err_body.get("error_description", resp.text[:200])
+            except Exception:
+                err_code, err_desc = "", resp.text[:200]
+
+            if err_code == "invalid_grant":
+                raise AuthError(
+                    "Refresh token has expired or been revoked. "
+                    "Run 'agentic-vision login' to re-authenticate."
+                )
+            raise AuthError(f"Token refresh failed ({resp.status_code}): {err_desc}")
 
         data = resp.json()
         updated = creds.copy()
         updated["access_token"] = data["access_token"]
-        updated["expiry_date"] = int(
-            (time.time() + data.get("expires_in", 3600)) * 1000
-        )
+        updated["expiry_date"] = int((time.time() + data.get("expires_in", 3600)) * 1000)
         if "refresh_token" in data:
             updated["refresh_token"] = data["refresh_token"]
 

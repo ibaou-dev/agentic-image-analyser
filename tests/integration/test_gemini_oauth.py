@@ -3,6 +3,7 @@ Integration tests for Gemini OAuth + Code Assist provider.
 
 Requires: AGENTIC_VISION_INTEGRATION_TEST=1 and valid ~/.gemini/oauth_creds.json
 """
+
 from __future__ import annotations
 
 import json
@@ -90,10 +91,15 @@ class TestGeminiOAuthIntegration:
                 "model": model,
                 "project": project,
                 "request": {
-                    "contents": [{"role": "user", "parts": [
-                        {"text": "Describe this image in one word."},
-                        {"inline_data": {"mime_type": "image/png", "data": b64}},
-                    ]}],
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [
+                                {"text": "Describe this image in one word."},
+                                {"inline_data": {"mime_type": "image/png", "data": b64}},
+                            ],
+                        }
+                    ],
                     "generationConfig": {"maxOutputTokens": 20},
                 },
             },
@@ -101,7 +107,9 @@ class TestGeminiOAuthIntegration:
             timeout=60,
         )
         if resp.status_code == 429:
-            pytest.skip(f"Model {model!r} at capacity (429) — auth and request structure are correct")
+            pytest.skip(
+                f"Model {model!r} at capacity (429) — auth and request structure are correct"
+            )
         assert resp.status_code == 200, f"HTTP {resp.status_code}: {resp.text[:200]}"
         data = resp.json()
         inner = data.get("response", data)
@@ -123,7 +131,8 @@ class TestCliIntegration:
         """Verify auth-check CLI command works."""
         result = subprocess.run(
             [sys.executable, "-m", "agentic_vision", "auth-check", "--pretty"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -136,13 +145,23 @@ class TestCliIntegration:
             pytest.skip(f"Test fixture not found: {FIXTURE_IMAGE}")
 
         result = subprocess.run(
-            [sys.executable, "-m", "agentic_vision", "analyze",
-             "--image", str(FIXTURE_IMAGE),
-             "--prompt", "What colour is this image?",
-             "--provider", "gemini-oauth",
-             "--model", "gemini-2.5-flash",
-             "--pretty"],
-            capture_output=True, text=True,
+            [
+                sys.executable,
+                "-m",
+                "agentic_vision",
+                "analyze",
+                "--image",
+                str(FIXTURE_IMAGE),
+                "--prompt",
+                "What colour is this image?",
+                "--provider",
+                "gemini-oauth",
+                "--model",
+                "gemini-2.5-flash",
+                "--pretty",
+            ],
+            capture_output=True,
+            text=True,
         )
         if result.returncode == 3:
             pytest.skip(f"Auth not configured: {result.stdout}")
@@ -154,7 +173,11 @@ class TestCliIntegration:
             r = data["results"][0]
             error_msg = r.get("error", "")
             if r["status"] == "error":
-                if "429" in error_msg or "Rate limit" in error_msg or "capacity" in error_msg.lower():
+                if (
+                    "429" in error_msg
+                    or "Rate limit" in error_msg
+                    or "capacity" in error_msg.lower()
+                ):
                     pytest.skip("Model at capacity (429) — auth and request structure are correct")
                 if "401" in error_msg or "403" in error_msg:
                     pytest.fail(f"Auth rejected: {error_msg}")

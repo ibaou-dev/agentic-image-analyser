@@ -14,7 +14,7 @@ uv sync
 uv run python scripts/verify_auth.py
 
 # Analyse an image
-uv run agentic-vision analyze --image /path/to/screenshot.png --json
+uv run agentic-vision analyze --image /path/to/screenshot.png
 
 # Pre-flight check (run before analysing)
 uv run agentic-vision precheck
@@ -26,12 +26,14 @@ uv run agentic-vision precheck
 
 | Priority | Method | Setup |
 |---|---|---|
-| 1 | **Gemini CLI OAuth** | `gemini auth login` → `~/.gemini/oauth_creds.json` |
+| 1 | **Gemini CLI OAuth** | `agentic-vision login` or `gemini auth login` → `~/.gemini/oauth_creds.json` |
 | 2 | **Gemini API Key** | `GEMINI_API_KEY=AIza...` in `.env` |
 | 3 | **OpenAI-compatible** | `OPENAI_API_KEY=sk-...` in `.env` |
 | 4 | **Anthropic** | `ANTHROPIC_API_KEY=sk-ant-...` in `.env` |
 
 Copy `.env.example` → `.env` and fill in the relevant key(s).
+
+**Gemini CLI requirement**: The Gemini CLI (`gemini`) is needed for initial OAuth login and for automatic token refresh. If you set `GEMINI_CLI_OAUTH_CLIENT_ID` + `GEMINI_CLI_OAUTH_CLIENT_SECRET` in `.env`, token refresh works without the CLI installed. The credentials file (`~/.gemini/oauth_creds.json`) alone is sufficient to call the API if the token has not expired.
 
 ---
 
@@ -68,26 +70,31 @@ uv run agentic-vision export-schema > agentic-vision.schema.json
 
 ## CLI Reference
 
+All commands output JSON by default. Use `--pretty` for human-readable output, or `--json` as an explicit no-op flag for scripting clarity.
+
 ```bash
-# Analyse images (JSON output for scripting)
+# Analyse images
 uv run agentic-vision analyze \
   --image /path/img1.png /path/img2.png \
   --prompt "Describe the UI layout" \
   --provider gemini-oauth \
-  --model gemini-2.5-pro \
-  --json
+  --model gemini-2.5-pro
+
+# Authenticate / re-authenticate with Gemini OAuth
+uv run agentic-vision login          # delegates to `gemini auth login` if available
+uv run agentic-vision login --force  # re-authenticate even if already valid
 
 # Pre-flight check
-uv run agentic-vision precheck [--json]
+uv run agentic-vision precheck
 
 # Auth diagnostics
-uv run agentic-vision auth-check [--json] [--pretty]
+uv run agentic-vision auth-check --pretty
 
 # List available models
-uv run agentic-vision list-models [--json] [--pretty]
+uv run agentic-vision list-models --pretty
 
 # Check rate limit quotas
-uv run agentic-vision check-quota [--json]
+uv run agentic-vision check-quota --pretty
 
 # Export config JSON schema
 uv run agentic-vision export-schema
@@ -175,13 +182,27 @@ Client config example (Claude Desktop / Claude Code):
 
 ---
 
-## Fallback Behaviour
+## Backoff & Fallback
+
+### Backoff (retries before fallback)
+
+On a rate-limit error the engine retries with configurable delays before switching providers:
+
+```toml
+[backoff]
+enabled = true
+delays = [5.0, 15.0, 30.0]   # seconds; 3 attempts
+respect_retry_after = true    # honour API Retry-After header if present
+max_retry_after = 60.0        # cap on API-provided delay
+```
+
+### Fallback Behaviour
 
 Three modes (`agentic-vision.toml → [fallback] mode`):
 
 | Mode | Behaviour |
 |---|---|
-| `auto` | Falls back immediately on rate limits, auth failures, timeouts |
+| `auto` | Falls back automatically on rate limits, auth failures, timeouts |
 | `llm-prompt` | Asks an LLM (Anthropic/Gemini) for a yes/no decision |
 | `disabled` | Never falls back — surface the error immediately |
 

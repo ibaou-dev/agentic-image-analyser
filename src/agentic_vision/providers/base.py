@@ -1,4 +1,5 @@
 """Abstract base class and shared data structures for vision providers."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

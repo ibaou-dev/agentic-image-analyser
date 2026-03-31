@@ -1,4 +1,5 @@
 """Anthropic Claude vision provider."""
+
 from __future__ import annotations
 
 import base64
@@ -57,21 +58,20 @@ class AnthropicVisionProvider(VisionProvider):
             message = client.messages.create(
                 model=model,
                 max_tokens=2048,
-                messages=[{
-                    "role": "user",
-                    "content": [
-                        {  # type: ignore[list-item]
-                            "type": "image",
-                            "source": {"type": "base64", "media_type": mime, "data": b64},
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {  # type: ignore[list-item]
+                                "type": "image",
+                                "source": {"type": "base64", "media_type": mime, "data": b64},
+                            },
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
             )
-            return "".join(
-                block.text for block in message.content
-                if hasattr(block, "text")
-            )
+            return "".join(block.text for block in message.content if hasattr(block, "text"))
         except Exception as exc:
             msg = str(exc)
             if "529" in msg or "overloaded" in msg.lower():
@@ -83,4 +83,6 @@ class AnthropicVisionProvider(VisionProvider):
             raise ProviderError(msg) from exc
 
     def list_models(self) -> list[ModelInfo]:
-        return [ModelInfo(name=m, provider=self.name, supports_vision=True) for m in _DEFAULT_MODELS]
+        return [
+            ModelInfo(name=m, provider=self.name, supports_vision=True) for m in _DEFAULT_MODELS
+        ]

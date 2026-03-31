@@ -10,6 +10,7 @@ Priority:
 For Code Assist specifically, gemini-oauth is always used regardless of order
 (it requires an OAuth token, not an API key).
 """
+
 from __future__ import annotations
 
 from agentic_vision.auth.anthropic_api import AnthropicApiProvider
@@ -47,9 +48,9 @@ class AuthResolver:
         """Return the auth provider matching the given provider name."""
         name_to_cls: dict[str, type[AuthProvider]] = {
             "gemini-oauth": GeminiOAuthProvider,
-            "gemini-api":   GeminiApiKeyProvider,
-            "openai":       OpenAICompatProvider,
-            "anthropic":    AnthropicApiProvider,
+            "gemini-api": GeminiApiKeyProvider,
+            "openai": OpenAICompatProvider,
+            "anthropic": AnthropicApiProvider,
         }
         cls = name_to_cls.get(name)
         if cls is None:

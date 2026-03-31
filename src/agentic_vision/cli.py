@@ -8,6 +8,7 @@ Exit codes:
     2  — complete failure
     3  — auth / configuration error
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,6 +25,27 @@ def _json_out(data: dict[str, Any], *, pretty: bool = False) -> None:
     print(json.dumps(data, indent=indent))
 
 
+def _add_json_pretty(parser: argparse.ArgumentParser) -> None:
+    """Add --json and --pretty to a subparser. Both control output format."""
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_mode",
+        help="Output compact JSON (default — explicit flag accepted for scripting)",
+    )
+    group.add_argument(
+        "--pretty",
+        action="store_true",
+        dest="pretty",
+        help="Pretty-print JSON output",
+    )
+
+
+def _is_pretty(args: argparse.Namespace) -> bool:
+    return getattr(args, "pretty", False)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentic-vision",
@@ -35,37 +57,50 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # ── analyze ────────────────────────────────────────────────────────────────
     analyze = sub.add_parser("analyze", help="Analyse one or more image files")
-    analyze.add_argument("--image", nargs="+", required=True, metavar="PATH",
-                         help="Image file(s) to analyse")
-    analyze.add_argument("--prompt", metavar="TEXT",
-                         help="Custom analysis prompt")
-    analyze.add_argument("--provider", metavar="NAME",
-                         help="Force a specific provider (e.g. gemini-oauth, gemini-api)")
-    analyze.add_argument("--model", metavar="NAME",
-                         help="Force a specific model")
-    analyze.add_argument("--output-dir", metavar="PATH",
-                         help="Override the output directory for analysis reports")
-    analyze.add_argument("--pretty", action="store_true",
-                         help="Pretty-print JSON output")
+    analyze.add_argument(
+        "--image", nargs="+", required=True, metavar="PATH", help="Image file(s) to analyse"
+    )
+    analyze.add_argument("--prompt", metavar="TEXT", help="Custom analysis prompt")
+    analyze.add_argument(
+        "--provider",
+        metavar="NAME",
+        help="Force a specific provider (e.g. gemini-oauth, gemini-api)",
+    )
+    analyze.add_argument("--model", metavar="NAME", help="Force a specific model")
+    analyze.add_argument(
+        "--output-dir", metavar="PATH", help="Override the output directory for analysis reports"
+    )
+    _add_json_pretty(analyze)
 
     # ── list-models ────────────────────────────────────────────────────────────
-    list_models = sub.add_parser("list-models", help="List available models")
-    list_models.add_argument("--provider", metavar="NAME",
-                             help="Filter to a specific provider")
-    list_models.add_argument("--pretty", action="store_true")
+    list_models = sub.add_parser("list-models", help="List available models per provider")
+    list_models.add_argument("--provider", metavar="NAME", help="Filter to a specific provider")
+    _add_json_pretty(list_models)
 
     # ── check-quota ────────────────────────────────────────────────────────────
     check_quota = sub.add_parser("check-quota", help="Show rate limit status")
-    check_quota.add_argument("--provider", metavar="NAME")
-    check_quota.add_argument("--pretty", action="store_true")
+    check_quota.add_argument("--provider", metavar="NAME", help="Filter to a specific provider")
+    _add_json_pretty(check_quota)
 
     # ── auth-check ─────────────────────────────────────────────────────────────
     auth_check = sub.add_parser("auth-check", help="Verify authentication configuration")
-    auth_check.add_argument("--pretty", action="store_true")
+    _add_json_pretty(auth_check)
 
     # ── precheck ───────────────────────────────────────────────────────────────
     precheck = sub.add_parser("precheck", help="Check environment prerequisites")
-    precheck.add_argument("--pretty", action="store_true")
+    _add_json_pretty(precheck)
+
+    # ── login ──────────────────────────────────────────────────────────────────
+    login = sub.add_parser(
+        "login",
+        help="Authenticate with Gemini (delegates to 'gemini auth login' if available)",
+    )
+    login.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-authentication even if credentials exist",
+    )
+    _add_json_pretty(login)
 
     # ── export-schema ──────────────────────────────────────────────────────────
     sub.add_parser("export-schema", help="Print JSON Schema for agentic-vision.toml")
@@ -73,7 +108,55 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+
+def _default_provider_cfgs() -> list[Any]:
+    """
+    Return a best-effort list of ProviderConfig objects based on available credentials,
+    used when no agentic-vision.toml is present.
+    """
+    import os
+
+    from agentic_vision.auth.gemini_oauth import GeminiOAuthProvider
+    from agentic_vision.config import ProviderConfig
+
+    defaults = []
+    if GeminiOAuthProvider().is_available():
+        defaults.append(
+            ProviderConfig(
+                name="gemini-oauth",
+                priority_model="gemini-3-flash-preview",
+                fallback_model="gemini-2.5-flash",
+            )
+        )
+    if os.environ.get("GEMINI_API_KEY"):
+        defaults.append(
+            ProviderConfig(
+                name="gemini-api",
+                priority_model="gemini-2.5-pro",
+                fallback_model="gemini-2.5-flash",
+            )
+        )
+    if os.environ.get("OPENAI_API_KEY"):
+        defaults.append(
+            ProviderConfig(
+                name="openai",
+                priority_model="gpt-4o",
+            )
+        )
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        defaults.append(
+            ProviderConfig(
+                name="anthropic",
+                priority_model="claude-sonnet-4-6",
+            )
+        )
+    return defaults
+
+
 # ── command handlers ──────────────────────────────────────────────────────────
+
 
 def _cmd_analyze(args: argparse.Namespace) -> int:
     from agentic_vision.config import load_config
@@ -82,8 +165,10 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     try:
         cfg = load_config()
     except Exception as exc:
-        _json_out({"status": "error", "error": f"Config error: {exc}", "results": []},
-                  pretty=getattr(args, "pretty", False))
+        _json_out(
+            {"status": "error", "error": f"Config error: {exc}", "results": []},
+            pretty=_is_pretty(args),
+        )
         return 3
 
     if args.output_dir:
@@ -99,16 +184,18 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
         if p.exists():
             valid_paths.append(str(p.resolve()))
         else:
-            pre_errors.append({
-                "image_path": raw,
-                "analysis_file": "",
-                "summary": "",
-                "provider": "",
-                "model": "",
-                "duration_seconds": 0.0,
-                "status": "error",
-                "error": f"File not found: {raw}",
-            })
+            pre_errors.append(
+                {
+                    "image_path": raw,
+                    "analysis_file": "",
+                    "summary": "",
+                    "provider": "",
+                    "model": "",
+                    "duration_seconds": 0.0,
+                    "status": "error",
+                    "error": f"File not found: {raw}",
+                }
+            )
 
     results_raw = engine.analyze(
         valid_paths,
@@ -123,8 +210,7 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     all_errors = all(r.get("status") == "error" for r in results)
 
     status = "error" if all_errors else ("partial" if has_errors else "success")
-    _json_out({"status": status, "results": results, "error": None},
-              pretty=getattr(args, "pretty", False))
+    _json_out({"status": status, "results": results, "error": None}, pretty=_is_pretty(args))
 
     if all_errors:
         return 2
@@ -140,13 +226,14 @@ def _cmd_list_models(args: argparse.Namespace) -> int:
     try:
         cfg = load_config()
     except Exception as exc:
-        _json_out({"status": "error", "error": str(exc)}, pretty=args.pretty)
+        _json_out({"status": "error", "error": str(exc)}, pretty=_is_pretty(args))
         return 3
 
-    providers_out: dict[str, object] = {}
     target_name = getattr(args, "provider", None)
+    providers_list = cfg.enabled_providers() or _default_provider_cfgs()
 
-    for pcfg in cfg.enabled_providers():
+    providers_out: dict[str, object] = {}
+    for pcfg in providers_list:
         if target_name and pcfg.name != target_name:
             continue
         provider = _make_provider(pcfg)
@@ -164,7 +251,7 @@ def _cmd_list_models(args: argparse.Namespace) -> int:
         except Exception as exc:
             providers_out[pcfg.name] = {"available": False, "error": str(exc)}
 
-    _json_out({"status": "success", "providers": providers_out}, pretty=args.pretty)
+    _json_out({"status": "success", "providers": providers_out}, pretty=_is_pretty(args))
     return 0
 
 
@@ -175,13 +262,14 @@ def _cmd_check_quota(args: argparse.Namespace) -> int:
     try:
         cfg = load_config()
     except Exception as exc:
-        _json_out({"status": "error", "error": str(exc)}, pretty=args.pretty)
+        _json_out({"status": "error", "error": str(exc)}, pretty=_is_pretty(args))
         return 3
 
     target_name = getattr(args, "provider", None)
+    providers_list = cfg.enabled_providers() or _default_provider_cfgs()
     providers_out: dict[str, object] = {}
 
-    for pcfg in cfg.enabled_providers():
+    for pcfg in providers_list:
         if target_name and pcfg.name != target_name:
             continue
         rl = RateLimiter(rpm=pcfg.rate_limit_rpm, tpm=pcfg.rate_limit_tpm)
@@ -193,7 +281,7 @@ def _cmd_check_quota(args: argparse.Namespace) -> int:
             "tpm_limit": int(status["tpm_capacity"]),
         }
 
-    _json_out({"status": "success", "providers": providers_out}, pretty=args.pretty)
+    _json_out({"status": "success", "providers": providers_out}, pretty=_is_pretty(args))
     return 0
 
 
@@ -236,7 +324,7 @@ def _cmd_auth_check(args: argparse.Namespace) -> int:
         except AuthError as exc:
             checks["gemini_oauth_token"] = {"valid": False, "error": str(exc)}
 
-    _json_out({"status": "success", "checks": checks}, pretty=args.pretty)
+    _json_out({"status": "success", "checks": checks}, pretty=_is_pretty(args))
     return 0
 
 
@@ -256,29 +344,111 @@ def _cmd_precheck(args: argparse.Namespace) -> int:
     passed = all_passed(results)
     _json_out(
         {"status": "ok" if passed else "fail", "checks": checks_out},
-        pretty=getattr(args, "pretty", False),
+        pretty=_is_pretty(args),
     )
     return 0 if passed else 2
 
 
+def _cmd_login(args: argparse.Namespace) -> int:
+    """
+    Authenticate with Gemini OAuth.
+
+    Strategy:
+      1. If credentials exist and are valid (and --force not set) → report OK.
+      2. If gemini CLI is in PATH → delegate to `gemini auth login`.
+      3. Otherwise → print manual instructions.
+    """
+    import shutil
+    import subprocess
+
+    from agentic_vision.auth.base import AuthError
+    from agentic_vision.auth.gemini_oauth import GeminiOAuthProvider
+
+    oauth = GeminiOAuthProvider()
+    force = getattr(args, "force", False)
+
+    # Check current state unless --force
+    if not force and oauth.is_available():
+        try:
+            token = oauth.get_access_token()
+            _json_out(
+                {
+                    "status": "ok",
+                    "message": "Already authenticated. Use --force to re-authenticate.",
+                    "token_preview": f"{token[:8]}…",
+                },
+                pretty=_is_pretty(args),
+            )
+            return 0
+        except AuthError:
+            pass  # fall through to re-auth
+
+    gemini_bin = shutil.which("gemini")
+    if gemini_bin:
+        _json_out(
+            {
+                "status": "delegating",
+                "message": f"Delegating to '{gemini_bin} auth login' …",
+            },
+            pretty=_is_pretty(args),
+        )
+        result = subprocess.run([gemini_bin, "auth", "login"], check=False)
+        if result.returncode == 0:
+            _json_out(
+                {"status": "ok", "message": "Authentication successful."}, pretty=_is_pretty(args)
+            )
+            return 0
+        _json_out(
+            {
+                "status": "error",
+                "message": f"'gemini auth login' exited with code {result.returncode}.",
+            },
+            pretty=_is_pretty(args),
+        )
+        return 3
+
+    # No CLI available — print instructions
+    creds_path = oauth._creds_path
+    _json_out(
+        {
+            "status": "error",
+            "message": (
+                "Gemini CLI not found. To authenticate:\n"
+                "  Option A: Install Gemini CLI (https://github.com/google-gemini/gemini-cli) "
+                "and run 'gemini auth login'.\n"
+                f"  Option B: Manually place OAuth credentials at {creds_path} "
+                "(fields: access_token, refresh_token, expiry_date, token_type).\n"
+                "  Option C: Set GEMINI_CLI_OAUTH_CLIENT_ID + GEMINI_CLI_OAUTH_CLIENT_SECRET "
+                "in .env to enable token refresh without the CLI."
+            ),
+            "creds_path": str(creds_path),
+        },
+        pretty=_is_pretty(args),
+    )
+    return 3
+
+
 def _cmd_export_schema(_args: argparse.Namespace) -> int:
     from agentic_vision.config import export_json_schema
+
     print(export_json_schema())
     return 0
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
     dispatch = {
-        "analyze":       _cmd_analyze,
-        "list-models":   _cmd_list_models,
-        "check-quota":   _cmd_check_quota,
-        "auth-check":    _cmd_auth_check,
-        "precheck":      _cmd_precheck,
+        "analyze": _cmd_analyze,
+        "list-models": _cmd_list_models,
+        "check-quota": _cmd_check_quota,
+        "auth-check": _cmd_auth_check,
+        "precheck": _cmd_precheck,
+        "login": _cmd_login,
         "export-schema": _cmd_export_schema,
     }
 

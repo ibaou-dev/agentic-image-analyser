@@ -1,4 +1,5 @@
 """Unit tests for config loading and validation."""
+
 from __future__ import annotations
 
 import textwrap
@@ -85,25 +86,31 @@ class TestAppConfig:
         assert isinstance(cfg.prompts, PromptsConfig)
 
     def test_enabled_providers(self) -> None:
-        cfg = AppConfig(providers=[
-            ProviderConfig(name="gemini-oauth", priority_model="x", enabled=True),
-            ProviderConfig(name="gemini-api",   priority_model="x", enabled=False),
-        ])
+        cfg = AppConfig(
+            providers=[
+                ProviderConfig(name="gemini-oauth", priority_model="x", enabled=True),
+                ProviderConfig(name="gemini-api", priority_model="x", enabled=False),
+            ]
+        )
         enabled = cfg.enabled_providers()
         assert len(enabled) == 1
         assert enabled[0].name == "gemini-oauth"
 
     def test_duplicate_provider_names_rejected(self) -> None:
         with pytest.raises(ValueError, match="unique"):
-            AppConfig(providers=[
-                ProviderConfig(name="gemini-oauth", priority_model="a"),
-                ProviderConfig(name="gemini-oauth", priority_model="b"),
-            ])
+            AppConfig(
+                providers=[
+                    ProviderConfig(name="gemini-oauth", priority_model="a"),
+                    ProviderConfig(name="gemini-oauth", priority_model="b"),
+                ]
+            )
 
     def test_get_provider(self) -> None:
-        cfg = AppConfig(providers=[
-            ProviderConfig(name="gemini-api", priority_model="gemini-2.5-pro"),
-        ])
+        cfg = AppConfig(
+            providers=[
+                ProviderConfig(name="gemini-api", priority_model="gemini-2.5-pro"),
+            ]
+        )
         found = cfg.get_provider("gemini-api")
         assert found is not None
         assert found.priority_model == "gemini-2.5-pro"
@@ -114,7 +121,8 @@ class TestAppConfig:
 class TestTomlLoading:
     def test_load_from_toml_file(self, tmp_path: Path) -> None:
         toml = tmp_path / "agentic-vision.toml"
-        toml.write_text(textwrap.dedent("""\
+        toml.write_text(
+            textwrap.dedent("""\
             [output]
             base_dir = "/tmp/test-analyses"
             summary_max_tokens = 200
@@ -124,7 +132,8 @@ class TestTomlLoading:
             priority_model = "gemini-2.5-pro"
             fallback_model = "gemini-2.5-flash"
             enabled = true
-        """))
+        """)
+        )
         cfg = load_app_config(toml)
         assert cfg.output.base_dir == "/tmp/test-analyses"
         assert cfg.output.summary_max_tokens == 200
@@ -147,6 +156,7 @@ class TestTomlLoading:
 class TestSchemaExport:
     def test_schema_is_valid_json(self) -> None:
         import json
+
         schema_str = export_json_schema()
         schema = json.loads(schema_str)
         assert schema["type"] == "object"
@@ -154,6 +164,7 @@ class TestSchemaExport:
 
     def test_schema_contains_key_fields(self) -> None:
         import json
+
         schema = json.loads(export_json_schema())
         assert "output" in schema["properties"]
         assert "providers" in schema["properties"]

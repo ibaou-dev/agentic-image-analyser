@@ -1,4 +1,5 @@
 """Unit tests for fallback logic."""
+
 from __future__ import annotations
 
 import pytest
@@ -15,7 +16,9 @@ from agentic_vision.providers.base import (
 from agentic_vision.providers.base import TimeoutError as ProviderTimeoutError
 
 
-def _make_cfg(name: str = "gemini-oauth", fallback_model: str | None = "gemini-2.5-flash") -> ProviderConfig:
+def _make_cfg(
+    name: str = "gemini-oauth", fallback_model: str | None = "gemini-2.5-flash"
+) -> ProviderConfig:
     return ProviderConfig(
         name=name,
         priority_model="gemini-2.5-pro",
@@ -83,11 +86,13 @@ class TestNextOption:
 
     def test_moves_to_next_provider_when_no_fallback_model(self) -> None:
         decider = _make_decider()
-        primary = ProviderConfig(name="gemini-oauth", priority_model="gemini-2.5-pro",
-                                  fallback_model=None, enabled=True)
-        secondary = ProviderConfig(name="gemini-api", priority_model="gemini-2.5-pro",
-                                   enabled=True)
-        result_cfg, result_model = decider.next_option(primary, [primary, secondary], "gemini-2.5-pro")
+        primary = ProviderConfig(
+            name="gemini-oauth", priority_model="gemini-2.5-pro", fallback_model=None, enabled=True
+        )
+        secondary = ProviderConfig(name="gemini-api", priority_model="gemini-2.5-pro", enabled=True)
+        result_cfg, result_model = decider.next_option(
+            primary, [primary, secondary], "gemini-2.5-pro"
+        )
         assert result_cfg.name == "gemini-api"
         assert result_model == "gemini-2.5-pro"
 

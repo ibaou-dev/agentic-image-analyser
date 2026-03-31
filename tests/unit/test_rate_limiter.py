@@ -1,4 +1,5 @@
 """Unit tests for the token bucket rate limiter."""
+
 from __future__ import annotations
 
 import threading
@@ -86,7 +87,12 @@ class TestRateLimiter:
     def test_status_returns_expected_keys(self) -> None:
         rl = RateLimiter(rpm=30, tpm=100_000)
         status = rl.status()
-        assert set(status.keys()) == {"rpm_available", "rpm_capacity", "tpm_available", "tpm_capacity"}
+        assert set(status.keys()) == {
+            "rpm_available",
+            "rpm_capacity",
+            "tpm_available",
+            "tpm_capacity",
+        }
 
     def test_rpm_refill_rate(self) -> None:
         # rpm=60 means 1 req/sec; capacity=60

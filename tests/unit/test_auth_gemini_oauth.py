@@ -1,4 +1,5 @@
 """Unit tests for Gemini OAuth auth provider (all mocked — no real API calls)."""
+
 from __future__ import annotations
 
 import json
@@ -32,6 +33,7 @@ def _make_creds(
 # Expose the static helper for testing
 def _is_expired_static(creds: dict) -> bool:
     from agentic_vision.auth.gemini_oauth import _EXPIRY_BUFFER_MS
+
     expiry_ms = int(creds.get("expiry_date", 0))
     now_ms = int(time.time() * 1000)
     return (now_ms + _EXPIRY_BUFFER_MS) >= expiry_ms

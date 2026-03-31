@@ -13,6 +13,7 @@ Error categorisation:
   - timeout            → TimeoutError (provider)
   - invalid_image      → InvalidImageError  (do NOT fall back — image-side problem)
 """
+
 from __future__ import annotations
 
 from agentic_vision.config import FallbackConfig, ProviderConfig
@@ -26,11 +27,11 @@ from agentic_vision.providers.base import TimeoutError as ProviderTimeoutError
 
 # Map error types → category strings used in FallbackConfig.auto_on_errors
 _ERROR_CATEGORY: dict[type[Exception], str] = {
-    RateLimitError:          "rate_limit",
-    AuthFailureError:        "auth_failure",
-    ModelUnavailableError:   "model_unavailable",
-    ProviderTimeoutError:    "timeout",
-    InvalidImageError:       "invalid_image",  # never falls back
+    RateLimitError: "rate_limit",
+    AuthFailureError: "auth_failure",
+    ModelUnavailableError: "model_unavailable",
+    ProviderTimeoutError: "timeout",
+    InvalidImageError: "invalid_image",  # never falls back
 }
 
 
@@ -98,10 +99,7 @@ class FallbackDecider:
         Raises FallbackExhaustedError if nothing is available.
         """
         # 1. Fallback model on same provider
-        if (
-            failed_cfg.fallback_model
-            and failed_model != failed_cfg.fallback_model
-        ):
+        if failed_cfg.fallback_model and failed_model != failed_cfg.fallback_model:
             return failed_cfg, failed_cfg.fallback_model
 
         # 2 + 3. Try next providers in order
@@ -141,6 +139,7 @@ class FallbackDecider:
         falls back to auto-mode behaviour.
         """
         import os
+
         task_context = os.environ.get("AGENTIC_VISION_TASK_CONTEXT", "image analysis task")
 
         decision_prompt = (
@@ -170,6 +169,7 @@ class FallbackDecider:
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
         if anthropic_key:
             import anthropic
+
             client = anthropic.Anthropic(api_key=anthropic_key)
             message = client.messages.create(
                 model="claude-haiku-4-5",
@@ -182,6 +182,7 @@ class FallbackDecider:
         gemini_key = os.environ.get("GEMINI_API_KEY")
         if gemini_key:
             import google.generativeai as genai
+
             genai.configure(api_key=gemini_key)
             model = genai.GenerativeModel("gemini-2.5-flash")
             response = model.generate_content(prompt)

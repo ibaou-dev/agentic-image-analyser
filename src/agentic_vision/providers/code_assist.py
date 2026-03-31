@@ -21,6 +21,7 @@ The request wraps the standard Gemini content format in a project envelope:
 
 Response is wrapped in {"response": {...}} — unwrapped before parsing.
 """
+
 from __future__ import annotations
 
 import base64
@@ -55,11 +56,11 @@ _KNOWN_VISION_MODELS = [
 ]
 
 _SUPPORTED_MIME_TYPES = {
-    ".png":  "image/png",
-    ".jpg":  "image/jpeg",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".webp": "image/webp",
-    ".gif":  "image/gif",
+    ".gif": "image/gif",
 }
 
 
@@ -72,8 +73,7 @@ def _image_mime_type(path: Path) -> str:
     if guessed and guessed.startswith("image/"):
         return guessed
     raise InvalidImageError(
-        f"Unsupported image format: {ext!r}. "
-        f"Supported: {', '.join(_SUPPORTED_MIME_TYPES)}"
+        f"Unsupported image format: {ext!r}. Supported: {', '.join(_SUPPORTED_MIME_TYPES)}"
     )
 
 
@@ -104,11 +104,7 @@ def _parse_response(data: dict[str, Any]) -> str:
         parts = content.get("parts", [])
 
         # Filter out pure thinking parts; collect text parts
-        texts = [
-            p["text"]
-            for p in parts
-            if "text" in p and not p.get("thought", False)
-        ]
+        texts = [p["text"] for p in parts if "text" in p and not p.get("thought", False)]
 
         if texts:
             return "\n".join(texts)
@@ -174,13 +170,15 @@ class CodeAssistProvider(VisionProvider):
             "model": model,
             "project": project,
             "request": {
-                "contents": [{
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {"inline_data": {"mime_type": mime_type, "data": b64_data}},
-                    ],
-                }],
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                            {"inline_data": {"mime_type": mime_type, "data": b64_data}},
+                        ],
+                    }
+                ],
                 "generationConfig": {},
             },
         }
@@ -246,6 +244,7 @@ class CodeAssistProvider(VisionProvider):
         body = resp.text[:300]
         if resp.status_code == 429:
             import contextlib
+
             retry_after: float | None = None
             with contextlib.suppress(ValueError):
                 retry_after = float(resp.headers.get("retry-after", 0))

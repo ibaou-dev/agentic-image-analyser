@@ -6,6 +6,7 @@ Resolution order:
   2. ~/.gemini/projects.json cache keyed by CWD
   3. POST /v1internal:loadCodeAssist to auto-provision and discover a managed project
 """
+
 from __future__ import annotations
 
 import json
@@ -18,12 +19,9 @@ import httpx
 from agentic_vision.auth.base import AuthError
 
 _PROJECTS_CACHE = Path.home() / ".gemini" / "projects.json"
-_LOAD_CODE_ASSIST_URL = (
-    "https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist"
-)
+_LOAD_CODE_ASSIST_URL = "https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist"
 _USER_AGENT = (
-    "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) "
-    "GeminiCLI/0.1 (linux; Node/22)"
+    "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) GeminiCLI/0.1 (linux; Node/22)"
 )
 
 
@@ -105,8 +103,7 @@ def resolve_project_id(access_token: str | None = None) -> str:
     )
     if not project_id:
         raise AuthError(
-            f"Could not extract project ID from loadCodeAssist response: "
-            f"{str(data)[:200]}"
+            f"Could not extract project ID from loadCodeAssist response: {str(data)[:200]}"
         )
 
     return str(project_id)

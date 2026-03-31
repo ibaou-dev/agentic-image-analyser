@@ -1,4 +1,5 @@
 """Unit tests for the precheck module."""
+
 from __future__ import annotations
 
 import sys
@@ -72,6 +73,7 @@ class TestAuthCheck:
 
     def test_passes_when_env_var_set(self, tmp_path: Path) -> None:
         import os
+
         with (
             patch("agentic_vision.precheck.Path.home", return_value=tmp_path),
             patch.dict(os.environ, {"GEMINI_API_KEY": "AIza-test"}),
@@ -81,13 +83,17 @@ class TestAuthCheck:
 
     def test_fails_when_nothing_configured(self, tmp_path: Path) -> None:
         import os
+
         with (
             patch("agentic_vision.precheck.Path.home", return_value=tmp_path),
-            patch.dict(os.environ, {
-                "GEMINI_API_KEY": "",
-                "OPENAI_API_KEY": "",
-                "ANTHROPIC_API_KEY": "",
-            }),
+            patch.dict(
+                os.environ,
+                {
+                    "GEMINI_API_KEY": "",
+                    "OPENAI_API_KEY": "",
+                    "ANTHROPIC_API_KEY": "",
+                },
+            ),
         ):
             result = check_auth_available()
             assert result.passed is False

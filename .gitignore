@@ -51,6 +51,11 @@ uv.lock.bak
 .DS_Store
 Thumbs.db
 
+# === CLAUDE CODE LOCAL STATE ===
+.agents/
+.claude/
+skills-lock.json
+
 # === MISC ===
 *.log
 *.tmp

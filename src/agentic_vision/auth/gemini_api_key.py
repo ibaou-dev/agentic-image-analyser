@@ -1,4 +1,5 @@
 """Gemini API key authentication provider."""
+
 from __future__ import annotations
 
 import os
@@ -22,7 +23,6 @@ class GeminiApiKeyProvider(AuthProvider):
     def get_access_token(self) -> str:
         if not self._api_key:
             raise AuthError(
-                "GEMINI_API_KEY not set. "
-                "Get an API key at https://aistudio.google.com/apikey"
+                "GEMINI_API_KEY not set. Get an API key at https://aistudio.google.com/apikey"
             )
         return self._api_key

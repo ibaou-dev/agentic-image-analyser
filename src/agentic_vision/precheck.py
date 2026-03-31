@@ -4,6 +4,7 @@ Pre-flight checks for agentic-vision.
 Run before any analysis to validate that the environment is correctly set up.
 Used by the SKILL.md to fail fast with actionable error messages.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -56,7 +57,9 @@ def check_auth_available() -> CheckResult:
     import os
 
     checks = {
-        "Gemini CLI OAuth (~/.gemini/oauth_creds.json)": Path.home() / ".gemini" / "oauth_creds.json",
+        "Gemini CLI OAuth (~/.gemini/oauth_creds.json)": Path.home()
+        / ".gemini"
+        / "oauth_creds.json",
     }
     env_keys = ["GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"]
 

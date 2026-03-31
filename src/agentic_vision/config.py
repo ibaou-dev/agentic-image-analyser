@@ -9,6 +9,7 @@ Usage:
     from agentic_vision.config import load_config
     cfg = load_config()  # auto-discovers config files
 """
+
 from __future__ import annotations
 
 import json
@@ -22,6 +23,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # ─── Config file discovery ─────────────────────────────────────────────────────
 _CONFIG_FILENAME = "agentic-vision.toml"
 _ENV_FILENAME = ".env"
+
 
 # Ordered search paths: project root first, then user home
 def _find_config_file(name: str) -> Path | None:
@@ -94,6 +96,24 @@ class FallbackConfig(BaseModel):
     )
 
 
+class BackoffConfig(BaseModel):
+    """Retry-with-backoff settings applied before falling back to a secondary provider."""
+
+    enabled: bool = True
+    delays: list[Annotated[float, Field(ge=0.0)]] = Field(
+        default_factory=lambda: [5.0, 15.0, 30.0],
+        description="Seconds to wait between successive retries (3 attempts by default)",
+    )
+    respect_retry_after: bool = Field(
+        default=True,
+        description="Honour the Retry-After value returned by the API when present",
+    )
+    max_retry_after: Annotated[float, Field(ge=1.0, le=300.0)] = Field(
+        default=60.0,
+        description="Cap on the API-provided Retry-After value to prevent indefinite waits",
+    )
+
+
 class ProviderConfig(BaseModel):
     name: Literal["gemini-oauth", "gemini-api", "openai", "anthropic"] | str
     priority_model: str
@@ -121,9 +141,7 @@ class PromptsConfig(BaseModel):
         "6. Key content areas and their apparent purpose\n\n"
         "Be specific and concise. Focus on what is visually observable."
     )
-    default_generic: str = (
-        "Describe this image in detail, noting key elements, visible text, and any technical content."
-    )
+    default_generic: str = "Describe this image in detail, noting key elements, visible text, and any technical content."
 
 
 class AppConfig(BaseModel):
@@ -131,6 +149,7 @@ class AppConfig(BaseModel):
 
     output: OutputConfig = Field(default_factory=OutputConfig)
     fallback: FallbackConfig = Field(default_factory=FallbackConfig)
+    backoff: BackoffConfig = Field(default_factory=BackoffConfig)
     providers: list[ProviderConfig] = Field(default_factory=list)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
 
@@ -163,6 +182,10 @@ class Config:
     @property
     def fallback(self) -> FallbackConfig:
         return self.app.fallback
+
+    @property
+    def backoff(self) -> BackoffConfig:
+        return self.app.backoff
 
     @property
     def providers(self) -> list[ProviderConfig]:

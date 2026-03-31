@@ -21,6 +21,17 @@ mode = "auto"
 # Error categories that trigger an automatic fallback
 auto_on_errors = ["rate_limit", "auth_failure", "model_unavailable", "timeout"]
 
+# ─── Backoff strategy ─────────────────────────────────────────────────────────
+[backoff]
+# Whether to retry with exponential backoff before triggering a provider fallback
+enabled = true
+# Wait times in seconds between successive retry attempts (3 attempts by default)
+delays = [5.0, 15.0, 30.0]
+# If the API returns a Retry-After header, honour it (capped at max_retry_after)
+respect_retry_after = true
+# Maximum seconds to wait even if the API suggests a longer delay
+max_retry_after = 60.0
+
 # ─── Prompt templates ─────────────────────────────────────────────────────────
 [prompts]
 # Default prompt for UI/UX screenshot analysis
@@ -46,9 +57,10 @@ default_generic = "Describe this image in detail, noting key elements, visible t
 [[providers]]
 name = "gemini-oauth"
 # Uses Gemini CLI OAuth token (~/.gemini/oauth_creds.json) + Code Assist endpoint.
-# Requires: gemini CLI installed and authenticated (run `gemini auth login`).
+# Initial auth: run `gemini auth login` or `agentic-vision login`.
+# Token refresh: requires gemini CLI OR GEMINI_CLI_OAUTH_CLIENT_ID/SECRET env vars.
 # GOOGLE_CLOUD_PROJECT env var must be set (or google_project_id in .env).
-priority_model = "gemini-2.5-pro"
+priority_model = "gemini-3-flash-preview"
 fallback_model = "gemini-2.5-flash"
 rate_limit_rpm = 60
 rate_limit_tpm = 250_000

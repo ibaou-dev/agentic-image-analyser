@@ -5,6 +5,7 @@ Saves full analysis as a markdown file with YAML frontmatter and returns
 a condensed AnalysisResult (summary + file path) that is safe to inject
 into Claude's context without blowing the token budget.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -19,8 +20,8 @@ class AnalysisResult:
     """Returned to the calling agent — small enough to include in context."""
 
     image_path: str
-    analysis_file: str        # absolute path to the saved markdown report
-    summary: str              # ≤ summary_max_tokens condensed analysis
+    analysis_file: str  # absolute path to the saved markdown report
+    summary: str  # ≤ summary_max_tokens condensed analysis
     provider: str
     model: str
     duration_seconds: float
@@ -182,6 +183,7 @@ def save_analysis(
     image_dimensions = "unknown"
     try:
         from PIL import Image as PilImage  # type: ignore[import-untyped,unused-ignore]
+
         with PilImage.open(img) as pil_img:
             w, h = pil_img.size
             image_dimensions = f"{w}x{h}"

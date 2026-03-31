@@ -1,4 +1,5 @@
 """OpenAI-compatible API authentication provider."""
+
 from __future__ import annotations
 
 import os
