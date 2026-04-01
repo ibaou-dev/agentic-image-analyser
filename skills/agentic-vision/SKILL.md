@@ -1,7 +1,8 @@
 ---
 name: agentic-vision
 description: |
-  Analyse local image files using Gemini, OpenAI, Anthropic, or local LLM vision models.
+  Analyse local image files using Gemini via the Code Assist endpoint (no API key needed —
+  uses the same OAuth credentials as the Gemini CLI).
   Saves a full markdown report to ./image-analyses/ and returns ONLY a summary and file path to
   keep image bytes completely out of Claude's context.
 
@@ -18,13 +19,14 @@ description: |
 
 # agentic-vision
 
-Delegates vision analysis to external models (Gemini, OpenAI, Claude, local LLMs).
+Delegates vision analysis to Gemini via the Code Assist endpoint.
 Image bytes never enter this context — only a ≤300-token summary and a file path are returned.
 
-> **Privacy note:** images are transmitted to the configured external vision provider
-> (default: Gemini). To keep images fully on-device, configure a local LLM provider
-> via `agentic-vision init-config` and set `provider = "openai"` pointing to a local
-> Ollama/LM Studio endpoint.
+The analysis script ships inside the skill directory — no package installation required.
+`uv run` installs the single dependency (httpx) in a cached venv on first use (~2s).
+
+> **Privacy note:** images are transmitted to Google's Gemini API (Code Assist endpoint).
+> The default provider uses your existing Gemini CLI OAuth credentials.
 
 ## Installing this skill
 
@@ -32,57 +34,59 @@ Image bytes never enter this context — only a ≤300-token summary and a file 
 npx skills add ibaou-dev/agentic-image-analyser --agent claude-code
 ```
 
-This copies the skill files into your project's `.agents/skills/agentic-vision/` directory.
-Claude Code picks it up automatically on next launch.
+This copies the skill files into your project's `.agents/skills/agentic-vision/` directory,
+including the `scripts/` subdirectory that contains the analysis scripts.
 
 Alternatively, install manually:
 ```bash
 mkdir -p .agents/skills/agentic-vision/scripts
 curl -fsSL https://raw.githubusercontent.com/ibaou-dev/agentic-image-analyser/main/skills/agentic-vision/SKILL.md \
   -o .agents/skills/agentic-vision/SKILL.md
-curl -fsSL https://raw.githubusercontent.com/ibaou-dev/agentic-image-analyser/main/skills/agentic-vision/scripts/bootstrap.sh \
-  -o .agents/skills/agentic-vision/scripts/bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/ibaou-dev/agentic-image-analyser/main/skills/agentic-vision/scripts/analyze.py \
+  -o .agents/skills/agentic-vision/scripts/analyze.py
+curl -fsSL https://raw.githubusercontent.com/ibaou-dev/agentic-image-analyser/main/skills/agentic-vision/scripts/precheck.py \
+  -o .agents/skills/agentic-vision/scripts/precheck.py
 ```
 
 ## Step 0 — Bootstrap (run once per machine)
 
-Check if the CLI is available:
+Check that `uv` is available:
 ```bash
-agentic-vision --version 2>/dev/null || echo "NOT_INSTALLED"
+uv --version 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
-If `NOT_INSTALLED`, install globally (pinned to latest stable tag):
-```bash
-uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser@v1.0.0"
+If `NOT_INSTALLED`, the user must install uv first:
+```
+Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+(see https://docs.astral.sh/uv/)
 ```
 
-If `uv` itself is missing:
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-# then reload shell or: export PATH="$HOME/.local/bin:$PATH"
-```
+Do NOT run this curl command yourself — ask the user to run it.
 
-Alternatively, run the bootstrap script (idempotent — safe to run multiple times):
+Alternatively, run the bootstrap script (checks uv + auth in one shot):
 ```bash
 bash .agents/skills/agentic-vision/scripts/bootstrap.sh
 ```
 
-After install, verify: `agentic-vision precheck --json`
-
 ## Step 1 — Pre-flight check (ALWAYS run first)
 
 ```bash
-agentic-vision precheck --json
+python3 .agents/skills/agentic-vision/scripts/precheck.py --json
 ```
 
 Parse the JSON. If `status != "ok"`, report the failed checks and their `actionable` hints.
-Do NOT proceed to analysis if a hard dependency (python, auth) is missing.
+Do NOT proceed to analysis if a check fails.
 
 ### If no auth is configured
 
-Run the interactive OAuth login (no Gemini CLI required):
+Run the interactive OAuth login:
 ```bash
 agentic-vision login
+```
+
+If `agentic-vision` is not installed, use the Gemini CLI directly:
+```bash
+gemini auth login
 ```
 
 This opens a browser (or prints a URL for WSL/SSH) and stores credentials at `~/.gemini/oauth_creds.json`.
@@ -100,32 +104,31 @@ then paste the redirect URL or auth code back into the terminal.
 
 ### Single image
 ```bash
-agentic-vision analyze \
+uv run .agents/skills/agentic-vision/scripts/analyze.py \
   --image /absolute/path/to/image.png \
   --json
 ```
 
 ### Multiple images (batch)
 ```bash
-agentic-vision analyze \
+uv run .agents/skills/agentic-vision/scripts/analyze.py \
   --image /path/img1.png /path/img2.png /path/img3.png \
   --json
 ```
 
 ### With a custom prompt
 ```bash
-agentic-vision analyze \
+uv run .agents/skills/agentic-vision/scripts/analyze.py \
   --image /path/screenshot.png \
   --prompt "Identify all form elements, their labels, and any validation errors visible." \
   --json
 ```
 
-### Force a specific provider or model
+### With a specific model
 ```bash
-agentic-vision analyze \
+uv run .agents/skills/agentic-vision/scripts/analyze.py \
   --image /path/img.png \
-  --provider gemini-oauth \
-  --model gemini-2.5-flash \
+  --model gemini-2.5-pro \
   --json
 ```
 
@@ -141,7 +144,7 @@ The command writes JSON to stdout:
       "analysis_file": "./image-analyses/2026-04-01/img_a1b2c3d4.md",
       "summary": "The screenshot shows a login form with...",
       "provider": "gemini-oauth",
-      "model": "gemini-3-flash-preview",
+      "model": "gemini-2.5-flash",
       "duration_seconds": 3.7,
       "status": "success"
     }
@@ -170,50 +173,37 @@ relevant section rather than dumping the whole file.
 |---|---|---|
 | 0 | All images succeeded | Return summaries |
 | 1 | Partial success | Report which images failed; return summaries for succeeded ones |
-| 2 | All failed | Report errors; suggest `auth-check` or `list-models` |
-| 3 | Auth / config error | Run `agentic-vision auth-check --json` and guide user to fix |
+| 2 | All failed | Report errors; check auth with precheck.py |
 
 ### Auth troubleshooting
 ```bash
-# Check all auth methods
-agentic-vision auth-check --json --pretty
-
-# List available models per provider
-agentic-vision list-models --json --pretty
+# Re-run precheck
+python3 .agents/skills/agentic-vision/scripts/precheck.py --json
 
 # Re-authenticate
 agentic-vision login
+# OR (if agentic-vision package not installed):
+gemini auth login
 ```
 
-## Configuration (optional — not required for basic use)
+## Optional: full package for advanced use
 
-Default providers are built-in: gemini-oauth (gemini-3-flash-preview → gemini-2.5-flash fallback)
-then gemini-api, based on which credentials are present.
+The `agentic-vision` CLI package provides additional providers (OpenAI, Anthropic, local LLMs),
+an MCP server, and auth management commands:
 
-To customise providers, output directory, rate limits, or fallback behaviour:
 ```bash
-# Create a config in the current project directory
+uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser@v1.0.0"
+```
+
+After install:
+```bash
+agentic-vision auth-check --json      # check all auth methods
+agentic-vision list-models --json     # list models per provider
+agentic-vision login                  # re-authenticate with Gemini
+```
+
+To use a local LLM (fully on-device, no data leaves your machine):
+```bash
 agentic-vision init-config
-
-# Or create a global user-level config
-agentic-vision init-config --global
-```
-
-Edit the resulting `agentic-vision.toml` as needed.
-Full reference: https://github.com/ibaou-dev/agentic-image-analyser/blob/main/agentic-vision.toml.example
-
-## Optional: MCP server
-
-For tighter Claude Code integration (native tool calls instead of Bash):
-
-```bash
-# Install with MCP extras
-uv tool install "agentic-vision[mcp] @ git+https://github.com/ibaou-dev/agentic-image-analyser"
-
-# Add to Claude Code MCP config:
-# {
-#   "mcpServers": {
-#     "agentic-vision": { "command": "agentic-vision-mcp" }
-#   }
-# }
+# Edit agentic-vision.toml: set provider = "openai" pointing to Ollama/LM Studio
 ```
