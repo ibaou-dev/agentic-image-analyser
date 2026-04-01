@@ -176,7 +176,7 @@ class FallbackDecider:
                 max_tokens=5,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return message.content[0].text  # type: ignore[union-attr,no-any-return]
+            return message.content[0].text  # type: ignore[union-attr]
 
         # Try Gemini API key
         gemini_key = os.environ.get("GEMINI_API_KEY")

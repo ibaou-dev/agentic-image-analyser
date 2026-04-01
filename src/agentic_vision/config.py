@@ -144,17 +144,41 @@ class PromptsConfig(BaseModel):
     default_generic: str = "Describe this image in detail, noting key elements, visible text, and any technical content."
 
 
+def _default_providers() -> list[ProviderConfig]:
+    """
+    Built-in provider list used when no agentic-vision.toml is present (or [[providers]] omitted).
+    Mirrors agentic-vision.toml.example exactly.
+    gemini-oauth is first (free-tier OAuth, no API key needed).
+    gemini-api is second (requires GEMINI_API_KEY).
+    """
+    return [
+        ProviderConfig(
+            name="gemini-oauth",
+            priority_model="gemini-3-flash-preview",
+            fallback_model="gemini-2.5-flash",
+        ),
+        ProviderConfig(
+            name="gemini-api",
+            priority_model="gemini-2.5-pro",
+            fallback_model="gemini-2.5-flash",
+        ),
+    ]
+
+
 class AppConfig(BaseModel):
     """Loaded from agentic-vision.toml."""
 
     output: OutputConfig = Field(default_factory=OutputConfig)
     fallback: FallbackConfig = Field(default_factory=FallbackConfig)
     backoff: BackoffConfig = Field(default_factory=BackoffConfig)
-    providers: list[ProviderConfig] = Field(default_factory=list)
+    providers: list[ProviderConfig] = Field(default_factory=_default_providers)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
 
     @model_validator(mode="after")
-    def providers_have_unique_names(self) -> AppConfig:
+    def validate_providers(self) -> AppConfig:
+        if not self.providers:
+            # TOML was loaded but [[providers]] was omitted entirely — apply defaults
+            self.providers = _default_providers()
         names = [p.name for p in self.providers]
         if len(names) != len(set(names)):
             raise ValueError("Provider names must be unique")
