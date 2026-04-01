@@ -275,3 +275,162 @@ uv run agentic-vision analyze --image /home/ibaou/workspace/agentic-image-analys
 uv run agentic-vision analyze --image /home/ibaou/workspace/agentic-image-analyser/screenshots/untitled.jpg \
   --model gemini-3.1-pro-preview --provider gemini-oauth --output-dir ./image-analyses/eval-gemini31-pro
 ```
+
+---
+
+---
+
+# Round 2 — Compressed Image (`screenshots/untitled_small.jpg`)
+
+**Date:** 2026-04-01
+**Image:** 1272×635 · 34 KB (50% scale, JPEG quality 70 — compressed from 2544×1270 · 240 KB, **7× smaller**)
+
+---
+
+## R2.1 Models Run
+
+| Model | Provider | Duration | Status |
+|---|---|---|---|
+| `gemini-2.5-flash` | gemini-oauth | 15.15s | ✅ Success |
+| `gemini-2.5-pro` | gemini-oauth | 51.18s | ✅ Success |
+| `gemini-3-flash-preview` | gemini-oauth | 13.70s | ✅ Success |
+| `gemini-3.1-pro-preview` | gemini-oauth | 17.89s | ✅ Success |
+
+---
+
+## R2.2 Full Model Responses
+
+### Model 1 — gemini-2.5-flash · 15.15s
+**Analysis file:** `./image-analyses/eval2-flash/2026-04-01/untitled_small_c1c2f634.md`
+
+**1. App ID:** Redmine · Git Mirror Dashboard · footer "© 2006-2026 Jean-Philippe Lang" ✅
+
+**2. Summary:** 3 total · 3 ok · 0 failed · 0 syncing · 0 stale ✅. Noted "ok" badge green background; other counters grey.
+
+**3. Table:**
+| Project | Repository | Remote URL | Auth Type | Poll (cron) | Last synced | Sync |
+|---|---|---|---|---|---|---|
+| makis | redmine_git_mirror | https://github.com/ibaou-dev/redmin… | None (public repo) | `*/15 * * * *` | 07:35 PM | SUCCESS |
+| makis | redmine-git-mirror-test | https://github.com/ibaou-dev/redmin… | None (public repo) | `*/15 * * * *` | 07:30 PM | SUCCESS |
+| zzz | agentic-dummy-project | https://github.com/ibaou-dev/agenti… | None (public repo) | `*/15 * * * *` | 07:30 PM | SUCCESS |
+
+**4. Navigation (§4):**
+- Top Header: Home · My page · Projects · Administration · Help ✅
+- Main Tabs: Projects · Activity · Issues · Spent time · Gantt · Calendar · News ✅
+
+**5. Sidebar:** All 15 items ✅. Describes icon for each item. "Git Mirror (with a Git branch icon)" — **no active state noted**.
+
+**6. Visual:** Green background for "ok" badge; SUCCESS green badge; standard layout. Sidebar icons described per item.
+
+**7. Completeness:** "Logged in as admin" · My account · Sign out · Search · "Jump to a project…" · footer ✅
+
+---
+
+### Model 2 — gemini-2.5-pro · 51.18s
+**Analysis file:** `./image-analyses/eval2-pro/2026-04-01/untitled_small_c1c2f634.md`
+
+**1. App ID:** Redmine · Git Mirror Dashboard · footer ✅
+
+**2. Summary:** 3 total · 3 ok · 0 failed · 0 syncing · 0 stale ✅. Described as "grey badges" with no colour differentiation.
+
+**3. Table:** All 3 rows × 7 columns ✅. Timing diff noted. URLs and cron in backtick formatting.
+
+**4. Navigation (§4):** ⚠️ Lists only project tabs (Projects · Activity … News). Global nav (Home, My page…) placed in **§7 again** — same structural error as Round 1.
+
+**5. Sidebar:** All 15 items ✅. No active state noted.
+
+**6. Visual:** "Zebra-striped" table rows noted; collapsible sidebar `»` symbol; icons in sidebar.
+
+**7. Completeness:** Global nav recovered here · "Logged in as admin" · footer ✅
+
+---
+
+### Model 3 — gemini-3-flash-preview · 13.70s
+**Analysis file:** `./image-analyses/eval2-gemini3-flash/2026-04-01/untitled_small_c1c2f634.md`
+
+**1. App ID:** Redmine · Git Mirror Dashboard · footer ✅
+
+**2. Summary:** 3 total · 3 ok · 0 failed · 0 syncing · 0 stale ✅. "grey borders and black text" for counters; green SUCCESS badge.
+
+**3. Table:** All 3 rows × 7 columns ✅. Timing diff noted.
+
+**4. Navigation (§4):**
+- "Top-Left Utilities": Home · My page · Projects · Administration · Help ✅
+- "Primary Application Tabs": Projects · Activity · Issues · Spent time · Gantt · Calendar · News ✅
+- Also listed Top-Right utilities and Search in §4 (captured in wrong section but still caught)
+
+**5. Sidebar:** All 15 items in numbered list ✅. **`Git Mirror` — "currently active"** ✅ Active state preserved at lower resolution.
+
+**6. Visual:** Dark blue header; lighter blue navigation bar; grey sidebar; cron-style syntax note; `>>` toggle icon.
+
+**7. Completeness:** Footer ✅. Note: "Logged in as admin" captured in §4 (Top-Right Utilities) rather than §7 — minor structural issue.
+
+---
+
+### Model 4 — gemini-3.1-pro-preview · 17.89s
+**Analysis file:** `./image-analyses/eval2-gemini31-pro/2026-04-01/untitled_small_c1c2f634.md`
+
+**1. App ID:** Redmine · Git Mirror Dashboard · footer ✅
+
+**2. Summary:** 3 total · 3 ok · 0 failed · 0 syncing · 0 stale ✅. "light grey pill-shaped badges" and "light green rectangular badge … SUCCESS". ⚠️ **No longer mentions individual badge colours** (pink/failed, blue/syncing) — this detail was unique to R1 and is gone.
+
+**3. Table:** All 3 rows × 7 columns ✅. Timing diff noted. URLs and cron in backtick formatting.
+
+**4. Navigation (§4):**
+- "Top Header Bar (Dark Grey)": Home · My page · Projects · Administration · Help ✅
+- "Secondary Header Bar (Blue)": Projects · Activity · Issues · Spent time · Gantt · Calendar · News ✅
+
+**5. Sidebar:** All 15 items ✅. ⚠️ **"Git Mirror" listed as a plain item** — active state no longer noted. In R1 it described "bold text, no icon — indicating it is the currently active page". This observation is lost.
+
+**6. Visual:** "Dark grey top bar, gradient blue main header." URL truncation and cron noted. No per-badge colour breakdown.
+
+**7. Completeness:** "Logged in as admin" · My account · Sign out · Search · footer ✅
+
+---
+
+## R2.3 Judge Scores — Round 2
+
+| Criterion | Wt | gemini-2.5-flash | gemini-2.5-pro | gemini-3-flash-preview | gemini-3.1-pro-preview |
+|---|---|---|---|---|---|
+| App identification | 10 | 10 | 10 | 10 | 10 |
+| Summary stats | 15 | 14 | 14 | 14 | 14 |
+| Table completeness | 30 | 29 | 29 | 29 | 29 |
+| Navigation | 15 | **15** | 9 | **15** | **15** |
+| Sidebar | 20 | 19 | 19 | **20** | 19 |
+| Format & clarity | 10 | 8 | 9 | 9 | 9 |
+| **Total** | **100** | **95** | **90** | **97** | **96** |
+
+**Score changes vs Round 1:**
+- gemini-2.5-flash: **95 → 95** (unchanged)
+- gemini-2.5-pro: **90 → 90** (unchanged)
+- gemini-3-flash-preview: **97 → 97** (unchanged)
+- gemini-3.1-pro-preview: **100 → 96** ⬇️ (−4 pts)
+
+---
+
+## R2.4 Round 1 vs Round 2 Comparison
+
+| Model | R1 Score | R1 Time | R2 Score | R2 Time | Score Δ | Time Δ |
+|---|---|---|---|---|---|---|
+| gemini-2.5-flash | 95 | 14.82s | 95 | 15.15s | — | +0.33s |
+| gemini-2.5-pro | 90 | 19.43s | 90 | 51.18s | — | **+31.75s** ⚠️ |
+| gemini-3-flash-preview | 97 | 14.52s | 97 | 13.70s | — | −0.82s |
+| gemini-3.1-pro-preview | **100** | 23.37s | **96** | 17.89s | **−4** | −5.48s |
+
+---
+
+## R2.5 Observations on Image Compression
+
+### Quality impact
+
+**Compression revealed a fine-detail ceiling for gemini-3.1-pro-preview.** Its R1 perfect score rested on two observations that required pixel-level detail: (1) differentiating the individual badge background colours (grey / light green / **light pink** / **light blue** / grey), and (2) noticing that the Git Mirror sidebar item is bold with no icon, indicating the active page. Both of these details are below the threshold of visibility at 1272×635, JPEG quality 70. At the compressed resolution, gemini-3.1-pro-preview becomes indistinguishable from gemini-3-flash-preview in the sidebar criterion, and all four models tie on summary stats.
+
+**The other three models are unaffected.** Their scores were already limited by structural reasoning (gemini-2.5-pro's nav categorisation error) or by not noticing the active state and badge colours — observations that were absent even from the full-resolution image. Compression cannot degrade what was never captured.
+
+**gemini-3-flash-preview is now the outright winner** at the compressed resolution: tied on score with the compressed 3.1-pro-preview (97 vs 96), 4s faster, and still the only model that correctly identifies the active sidebar item.
+
+### Speed impact
+
+The flash-tier models (2.5-flash, 3-flash-preview) show effectively no speed change — the smaller upload size barely registers at these latencies. The 3.1-pro-preview was actually faster in R2 (18s vs 23s), which is consistent with normal server-side variance. The 2.5-pro spike to 51s is a clear outlier and almost certainly reflects server-side load rather than image size.
+
+**Conclusion: for this class of UI screenshot task, image compression to 50% / JPEG 70 does not meaningfully affect response time for any model, but does reduce fine-detail extraction for the best model. The sweet spot — quality, speed, and compression robustness — is gemini-3-flash-preview.**
