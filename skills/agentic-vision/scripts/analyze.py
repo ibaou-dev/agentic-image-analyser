@@ -35,6 +35,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -43,9 +44,7 @@ import httpx
 # opencode-gemini-auth/src/constants.ts and similar community tools).
 # These identify the application, not the user — user identity is established
 # via Google's consent screen during 'gemini auth login'.
-_CLIENT_ID = (
-    "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
-)
+_CLIENT_ID = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
 _CLIENT_SECRET = "GOCSPX-" + "4uHgMPm-1o7Sk-geV6Cu5clXFsxl"
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
@@ -73,36 +72,39 @@ _SUPPORTED_MIME_TYPES = {
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
 
+
 def _creds_path() -> Path:
     raw = os.environ.get("GEMINI_OAUTH_CREDS_PATH", "~/.gemini/oauth_creds.json")
     return Path(raw).expanduser()
 
 
-def _load_creds() -> dict[str, object]:
+def _load_creds() -> Any:
     path = _creds_path()
     if not path.exists():
         sys.exit(
-            json.dumps({
-                "status": "error",
-                "error": (
-                    f"Gemini OAuth credentials not found at {path}. "
-                    "Run: agentic-vision login  OR  gemini auth login"
-                ),
-                "results": [],
-            })
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": (
+                        f"Gemini OAuth credentials not found at {path}. "
+                        "Run: agentic-vision login  OR  gemini auth login"
+                    ),
+                    "results": [],
+                }
+            )
         )
     try:
-        return json.loads(path.read_text(encoding="utf-8"))  # type: ignore[return-value]
+        return json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         sys.exit(json.dumps({"status": "error", "error": str(exc), "results": []}))
 
 
-def _is_expired(creds: dict[str, object]) -> bool:
-    expiry_ms = int(creds.get("expiry_date", 0))  # type: ignore[arg-type]
+def _is_expired(creds: Any) -> bool:
+    expiry_ms = int(creds.get("expiry_date", 0))
     return (int(time.time() * 1000) + _EXPIRY_BUFFER_MS) >= expiry_ms
 
 
-def _refresh_token(creds: dict[str, object]) -> dict[str, object]:
+def _refresh_token(creds: Any) -> Any:
     client_id = os.environ.get("GEMINI_CLI_OAUTH_CLIENT_ID") or _CLIENT_ID
     client_secret = os.environ.get("GEMINI_CLI_OAUTH_CLIENT_SECRET") or _CLIENT_SECRET
 
@@ -118,7 +120,9 @@ def _refresh_token(creds: dict[str, object]) -> dict[str, object]:
             timeout=15,
         )
     except httpx.HTTPError as exc:
-        sys.exit(json.dumps({"status": "error", "error": f"Token refresh failed: {exc}", "results": []}))
+        sys.exit(
+            json.dumps({"status": "error", "error": f"Token refresh failed: {exc}", "results": []})
+        )
 
     if not resp.is_success:
         try:
@@ -126,7 +130,15 @@ def _refresh_token(creds: dict[str, object]) -> dict[str, object]:
             msg = err.get("error_description") or err.get("error") or resp.text[:200]
         except Exception:
             msg = resp.text[:200]
-        sys.exit(json.dumps({"status": "error", "error": f"Token refresh failed ({resp.status_code}): {msg}", "results": []}))
+        sys.exit(
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": f"Token refresh failed ({resp.status_code}): {msg}",
+                    "results": [],
+                }
+            )
+        )
 
     data = resp.json()
     updated = dict(creds)
@@ -152,6 +164,7 @@ def _get_access_token() -> str:
 
 # ── Project ID ─────────────────────────────────────────────────────────────────
 
+
 def _resolve_project_id(access_token: str) -> str:
     # 1. Environment variable (set by Gemini CLI in ~/.zshrc)
     project = os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
@@ -166,7 +179,7 @@ def _resolve_project_id(access_token: str) -> str:
             projects = data.get("projects", {}) if isinstance(data, dict) else {}
             cached = projects.get(str(Path.cwd()))
             if cached and isinstance(cached, str):
-                return cached
+                return str(cached)
         except Exception:
             pass
 
@@ -174,7 +187,9 @@ def _resolve_project_id(access_token: str) -> str:
     try:
         resp = httpx.post(
             _LOAD_CODE_ASSIST_URL,
-            json={"metadata": {"ideType": "GEMINI_CLI", "platform": "LINUX", "pluginType": "GEMINI"}},
+            json={
+                "metadata": {"ideType": "GEMINI_CLI", "platform": "LINUX", "pluginType": "GEMINI"}
+            },
             headers={
                 "Authorization": f"Bearer {access_token}",
                 "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) GeminiCLI/0.1 (linux; Node/22)",
@@ -184,7 +199,11 @@ def _resolve_project_id(access_token: str) -> str:
         )
         resp.raise_for_status()
     except httpx.HTTPError as exc:
-        sys.exit(json.dumps({"status": "error", "error": f"Project ID discovery failed: {exc}", "results": []}))
+        sys.exit(
+            json.dumps(
+                {"status": "error", "error": f"Project ID discovery failed: {exc}", "results": []}
+            )
+        )
 
     body = resp.json()
     project_id = (
@@ -193,11 +212,20 @@ def _resolve_project_id(access_token: str) -> str:
         or body.get("project")
     )
     if not project_id:
-        sys.exit(json.dumps({"status": "error", "error": f"Could not determine project ID. Set GOOGLE_CLOUD_PROJECT in your environment.", "results": []}))
+        sys.exit(
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "Could not determine project ID. Set GOOGLE_CLOUD_PROJECT in your environment.",
+                    "results": [],
+                }
+            )
+        )
     return str(project_id)
 
 
 # ── Image helpers ──────────────────────────────────────────────────────────────
+
 
 def _mime_type(path: Path) -> str:
     ext = path.suffix.lower()
@@ -207,17 +235,30 @@ def _mime_type(path: Path) -> str:
     if guessed and guessed.startswith("image/"):
         return guessed
     supported = ", ".join(_SUPPORTED_MIME_TYPES)
-    sys.exit(json.dumps({"status": "error", "error": f"Unsupported image format {ext!r}. Supported: {supported}", "results": []}))
+    sys.exit(
+        json.dumps(
+            {
+                "status": "error",
+                "error": f"Unsupported image format {ext!r}. Supported: {supported}",
+                "results": [],
+            }
+        )
+    )
 
 
 def _encode_image(path: Path) -> str:
     try:
         return base64.b64encode(path.read_bytes()).decode()
     except OSError as exc:
-        sys.exit(json.dumps({"status": "error", "error": f"Cannot read image {path}: {exc}", "results": []}))
+        sys.exit(
+            json.dumps(
+                {"status": "error", "error": f"Cannot read image {path}: {exc}", "results": []}
+            )
+        )
 
 
 # ── API call ───────────────────────────────────────────────────────────────────
+
 
 def _parse_response(data: dict[str, object]) -> str:
     inner = data.get("response", data)
@@ -238,7 +279,11 @@ def _parse_response(data: dict[str, object]) -> str:
     parts = content.get("parts", [])
     assert isinstance(parts, list)
 
-    texts = [p["text"] for p in parts if isinstance(p, dict) and "text" in p and not p.get("thought", False)]
+    texts = [
+        p["text"]
+        for p in parts
+        if isinstance(p, dict) and "text" in p and not p.get("thought", False)
+    ]
     if texts:
         return "\n".join(texts)
 
@@ -265,13 +310,15 @@ def _call_api(
         "model": model,
         "project": project,
         "request": {
-            "contents": [{
-                "role": "user",
-                "parts": [
-                    {"text": prompt},
-                    {"inline_data": {"mime_type": mime, "data": b64}},
-                ],
-            }],
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": mime, "data": b64}},
+                    ],
+                }
+            ],
             "generationConfig": {},
         },
     }
@@ -302,6 +349,7 @@ def _call_api(
 
 
 # ── Output ─────────────────────────────────────────────────────────────────────
+
 
 def _stem_hash(image_path: str) -> str:
     return hashlib.md5(image_path.encode()).hexdigest()[:8]
@@ -342,7 +390,8 @@ def _save_report(
     image_dimensions = "unknown"
     try:
         # Best-effort dimensions — skip if PIL not available (not a dependency)
-        from PIL import Image as PilImage  # type: ignore[import-untyped]
+        from PIL import Image as PilImage
+
         with PilImage.open(img) as pil_img:
             w, h = pil_img.size
             image_dimensions = f"{w}x{h}"
@@ -387,6 +436,7 @@ prompt: "{prompt.replace('"', "'")}"
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -441,16 +491,18 @@ def main() -> None:
         image_str = str(image_path)
 
         if not image_path.exists():
-            results.append({
-                "image_path": image_str,
-                "analysis_file": "",
-                "summary": "",
-                "provider": "gemini-oauth",
-                "model": args.model,
-                "duration_seconds": 0.0,
-                "status": "error",
-                "error": f"Image file not found: {image_str}",
-            })
+            results.append(
+                {
+                    "image_path": image_str,
+                    "analysis_file": "",
+                    "summary": "",
+                    "provider": "gemini-oauth",
+                    "model": args.model,
+                    "duration_seconds": 0.0,
+                    "status": "error",
+                    "error": f"Image file not found: {image_str}",
+                }
+            )
             any_error = True
             continue
 
@@ -474,27 +526,31 @@ def main() -> None:
                 duration_seconds=duration,
                 base_dir=base_dir,
             )
-            results.append({
-                "image_path": image_str,
-                "analysis_file": analysis_file,
-                "summary": summary,
-                "provider": "gemini-oauth",
-                "model": args.model,
-                "duration_seconds": round(duration, 2),
-                "status": "success",
-            })
+            results.append(
+                {
+                    "image_path": image_str,
+                    "analysis_file": analysis_file,
+                    "summary": summary,
+                    "provider": "gemini-oauth",
+                    "model": args.model,
+                    "duration_seconds": round(duration, 2),
+                    "status": "success",
+                }
+            )
         except Exception as exc:
             duration = time.monotonic() - t0
-            results.append({
-                "image_path": image_str,
-                "analysis_file": "",
-                "summary": "",
-                "provider": "gemini-oauth",
-                "model": args.model,
-                "duration_seconds": round(duration, 2),
-                "status": "error",
-                "error": str(exc),
-            })
+            results.append(
+                {
+                    "image_path": image_str,
+                    "analysis_file": "",
+                    "summary": "",
+                    "provider": "gemini-oauth",
+                    "model": args.model,
+                    "duration_seconds": round(duration, 2),
+                    "status": "error",
+                    "error": str(exc),
+                }
+            )
             any_error = True
 
     all_failed = all(r["status"] == "error" for r in results)

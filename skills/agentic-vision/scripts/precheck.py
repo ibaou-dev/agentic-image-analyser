@@ -35,7 +35,9 @@ def _check_uv() -> dict[str, object]:
         "name": "uv",
         "passed": found,
         "detail": "uv found" if found else "uv not found",
-        "actionable": "" if found else (
+        "actionable": ""
+        if found
+        else (
             "Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh  "
             "(see https://docs.astral.sh/uv/)"
         ),
@@ -96,7 +98,7 @@ def main() -> None:
     status = "ok" if all_passed else "error"
 
     failed = [c for c in checks if not c["passed"]]
-    actionable = "; ".join(c["actionable"] for c in failed if c["actionable"])
+    actionable = "; ".join(str(c["actionable"]) for c in failed if c["actionable"])
 
     result = {
         "status": status,
