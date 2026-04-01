@@ -29,7 +29,7 @@ agentic-vision --version 2>/dev/null || echo "NOT_INSTALLED"
 
 If `NOT_INSTALLED`, install globally:
 ```bash
-uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser"
+uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser@feat/productize-skill"
 ```
 
 If `uv` itself is missing:

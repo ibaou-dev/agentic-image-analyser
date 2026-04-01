@@ -8,7 +8,8 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/ibaou-dev/agentic-image-analyser"
-PACKAGE="agentic-vision @ git+${REPO_URL}"
+BRANCH="feat/productize-skill"
+PACKAGE="agentic-vision @ git+${REPO_URL}@${BRANCH}"
 
 # ── 1. Ensure uv is available ─────────────────────────────────────────────────
 if ! command -v uv &>/dev/null; then
