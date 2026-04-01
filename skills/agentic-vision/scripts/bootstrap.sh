@@ -8,30 +8,24 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/ibaou-dev/agentic-image-analyser"
-BRANCH="main"
-PACKAGE="agentic-vision @ git+${REPO_URL}@${BRANCH}"
+TAG="v1.0.0"
+PACKAGE="agentic-vision @ git+${REPO_URL}@${TAG}"
 
 # ── 1. Ensure uv is available ─────────────────────────────────────────────────
+# uv is a prerequisite — install it manually if missing rather than running
+# an unattended curl|sh.  This keeps the user in control of that decision.
 if ! command -v uv &>/dev/null; then
-    echo "uv not found — installing..." >&2
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    # uv installs to ~/.local/bin or ~/.cargo/bin — add to PATH for this script
-    export PATH="${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}"
-fi
-
-if ! command -v uv &>/dev/null; then
-    echo '{"status":"error","error":"uv install failed — please install manually: https://docs.astral.sh/uv/"}' >&2
+    echo '{"status":"error","error":"uv not found. Install it first: curl -LsSf https://astral.sh/uv/install.sh | sh  (see https://docs.astral.sh/uv/)"}' >&2
     exit 1
 fi
 
-# ── 2. Install or upgrade agentic-vision ──────────────────────────────────────
+# ── 2. Install agentic-vision (pinned to TAG) ────────────────────────────────
+# We always install the pinned tag — never auto-upgrade to HEAD.
+# To upgrade: update the TAG variable above and re-run this script.
 if command -v agentic-vision &>/dev/null; then
-    echo "agentic-vision already installed ($(agentic-vision --version)) — upgrading..." >&2
-    uv tool upgrade agentic-vision 2>/dev/null || true
-else
-    echo "Installing agentic-vision from GitHub..." >&2
-    uv tool install "${PACKAGE}"
+    echo "agentic-vision already installed ($(agentic-vision --version)) — reinstalling pinned ${TAG}..." >&2
 fi
+uv tool install --force "${PACKAGE}"
 
 # ── 3. Run precheck — output is what Claude reads ────────────────────────────
 agentic-vision precheck --json

@@ -21,6 +21,11 @@ description: |
 Delegates vision analysis to external models (Gemini, OpenAI, Claude, local LLMs).
 Image bytes never enter this context — only a ≤300-token summary and a file path are returned.
 
+> **Privacy note:** images are transmitted to the configured external vision provider
+> (default: Gemini). To keep images fully on-device, configure a local LLM provider
+> via `agentic-vision init-config` and set `provider = "openai"` pointing to a local
+> Ollama/LM Studio endpoint.
+
 ## Installing this skill
 
 ```bash
@@ -46,9 +51,9 @@ Check if the CLI is available:
 agentic-vision --version 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
-If `NOT_INSTALLED`, install globally:
+If `NOT_INSTALLED`, install globally (pinned to latest stable tag):
 ```bash
-uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser"
+uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser@v1.0.0"
 ```
 
 If `uv` itself is missing:
