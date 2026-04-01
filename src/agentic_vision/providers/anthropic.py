@@ -62,7 +62,7 @@ class AnthropicVisionProvider(VisionProvider):
                     {
                         "role": "user",
                         "content": [
-                            {
+                            {  # type: ignore[list-item]
                                 "type": "image",
                                 "source": {"type": "base64", "media_type": mime, "data": b64},
                             },

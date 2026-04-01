@@ -42,13 +42,19 @@ def check_uv_available() -> CheckResult:
     )
 
 
-def check_venv_exists() -> CheckResult:
-    venv = Path(".venv")
+def check_cli_installed() -> CheckResult:
+    path = shutil.which("agentic-vision")
     return CheckResult(
-        name="venv_exists",
-        passed=venv.exists(),
-        message=f".venv {'exists' if venv.exists() else 'not found'}",
-        actionable="" if venv.exists() else "Run: uv sync --dev",
+        name="cli_installed",
+        passed=bool(path),
+        message=f"agentic-vision {'found at ' + path if path else 'not found'}",
+        actionable=""
+        if path
+        else (
+            'Install: uv tool install "agentic-vision @ git+https://github.com/'
+            'ibaou-dev/agentic-image-analyser"\n'
+            "  OR for dev checkout: cd <repo> && uv sync --dev"
+        ),
     )
 
 
@@ -115,7 +121,7 @@ def run_all_checks() -> list[CheckResult]:
     return [
         check_python_version(),
         check_uv_available(),
-        check_venv_exists(),
+        check_cli_installed(),
         check_auth_available(),
         check_config_available(),
     ]

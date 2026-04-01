@@ -38,6 +38,7 @@ dev = [
 
 [project.scripts]
 agentic-vision = "agentic_vision.cli:main"
+agentic-vision-mcp = "agentic_vision._mcp:main"
 gemini-login = "agentic_vision.auth.gemini_login:main"
 
 [tool.hatch.build.targets.wheel]
@@ -114,6 +115,8 @@ omit = [
     "*/cli.py",
     "*/engine.py",
     "*/auth/gemini_oauth.py",
+    "*/_mcp.py",
+    "*/_mcp_tools.py",
 ]
 
 # ─── Commitizen ──────────────────────────────────────────────────────────────

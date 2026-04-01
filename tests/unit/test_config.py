@@ -80,7 +80,10 @@ class TestProviderConfig:
 class TestAppConfig:
     def test_defaults(self) -> None:
         cfg = AppConfig()
-        assert cfg.providers == []
+        assert len(cfg.providers) == 2
+        assert cfg.providers[0].name == "gemini-oauth"
+        assert cfg.providers[0].priority_model == "gemini-3-flash-preview"
+        assert cfg.providers[1].name == "gemini-api"
         assert isinstance(cfg.output, OutputConfig)
         assert isinstance(cfg.fallback, FallbackConfig)
         assert isinstance(cfg.prompts, PromptsConfig)
@@ -143,7 +146,8 @@ class TestTomlLoading:
     def test_missing_toml_returns_defaults(self) -> None:
         cfg = load_app_config(Path("/nonexistent/path/agentic-vision.toml"))
         assert cfg.output.base_dir == "./image-analyses"
-        assert cfg.providers == []
+        assert len(cfg.providers) == 2
+        assert cfg.providers[0].name == "gemini-oauth"
 
     def test_invalid_toml_raises(self, tmp_path: Path) -> None:
         bad = tmp_path / "agentic-vision.toml"

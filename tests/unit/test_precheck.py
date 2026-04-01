@@ -10,9 +10,9 @@ from agentic_vision.precheck import (
     CheckResult,
     all_passed,
     check_auth_available,
+    check_cli_installed,
     check_python_version,
     check_uv_available,
-    check_venv_exists,
     run_all_checks,
 )
 
@@ -53,16 +53,21 @@ class TestUvCheck:
             assert "uv" in result.actionable.lower()
 
 
-class TestVenvCheck:
-    def test_venv_exists(self, tmp_path: Path) -> None:
-        venv = tmp_path / ".venv"
-        venv.mkdir()
-        with patch("agentic_vision.precheck.Path", return_value=venv):
-            # Patch the specific Path(".venv") in precheck
-            pass
-        # .venv is present in the actual project
-        result = check_venv_exists()
-        assert result.passed is True  # .venv exists in project root
+class TestCliInstalledCheck:
+    def test_found_when_on_path(self) -> None:
+        with patch(
+            "agentic_vision.precheck.shutil.which",
+            return_value="/home/user/.local/bin/agentic-vision",
+        ):
+            result = check_cli_installed()
+        assert result.passed is True
+        assert "/home/user/.local/bin/agentic-vision" in result.message
+
+    def test_not_found_when_absent(self) -> None:
+        with patch("agentic_vision.precheck.shutil.which", return_value=None):
+            result = check_cli_installed()
+        assert result.passed is False
+        assert "uv tool install" in result.actionable
 
 
 class TestAuthCheck:
