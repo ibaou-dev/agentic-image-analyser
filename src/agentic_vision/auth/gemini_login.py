@@ -53,7 +53,7 @@ _CLIENT_ID_USER = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j"
 _CLIENT_ID_DOMAIN = ".apps.googleusercontent.com"
 _CLIENT_ID = _CLIENT_ID_USER + _CLIENT_ID_DOMAIN
 _CS_A, _CS_B = "GOCSPX-", "4uHgMPm-1o7Sk-geV6Cu5clXFsxl"
-_CLIENT_SECRET = _CS_A + _CS_B  # noqa: S105
+_CLIENT_SECRET = _CS_A + _CS_B
 
 _AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 _TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"

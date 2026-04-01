@@ -20,6 +20,24 @@ description: Analyse local image files using Gemini, OpenAI, Anthropic, or local
 Delegates vision analysis to external models (Gemini, OpenAI, Claude, local LLMs).
 Image bytes never enter this context — only a ≤300-token summary and a file path are returned.
 
+## Installing this skill
+
+```bash
+npx skills add ibaou-dev/agentic-image-analyser --agent claude-code
+```
+
+This copies the skill files into your project's `.agents/skills/agentic-vision/` directory.
+Claude Code picks it up automatically on next launch.
+
+Alternatively, install manually:
+```bash
+mkdir -p .agents/skills/agentic-vision/scripts
+curl -fsSL https://raw.githubusercontent.com/ibaou-dev/agentic-image-analyser/main/skills/agentic-vision/SKILL.md \
+  -o .agents/skills/agentic-vision/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/ibaou-dev/agentic-image-analyser/main/skills/agentic-vision/scripts/bootstrap.sh \
+  -o .agents/skills/agentic-vision/scripts/bootstrap.sh
+```
+
 ## Step 0 — Bootstrap (run once per machine)
 
 Check if the CLI is available:
