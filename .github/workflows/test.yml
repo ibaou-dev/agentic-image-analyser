@@ -50,13 +50,19 @@ jobs:
         run: |
           python3 - <<'EOF'
           import sys
+          import yaml
           content = open("skills/agentic-vision/SKILL.md").read()
           if not content.startswith("---"):
               sys.exit("SKILL.md missing YAML frontmatter")
           fm_end = content.index("---", 3)
-          fm = content[3:fm_end]
-          for field in ("name:", "description:"):
-              if field not in fm:
-                  sys.exit(f"SKILL.md frontmatter missing {field}")
-          print("SKILL.md frontmatter OK")
+          fm_text = content[3:fm_end]
+          try:
+              data = yaml.safe_load(fm_text)
+          except yaml.YAMLError as e:
+              sys.exit(f"SKILL.md frontmatter YAML parse error: {e}")
+          if not isinstance(data.get("name"), str) or not data["name"]:
+              sys.exit("SKILL.md: 'name' must be a non-empty string")
+          if not isinstance(data.get("description"), str) or not data["description"]:
+              sys.exit("SKILL.md: 'description' must be a non-empty string")
+          print(f"SKILL.md frontmatter OK: name={data['name']!r}")
           EOF

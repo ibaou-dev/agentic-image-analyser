@@ -1,6 +1,7 @@
 ---
 name: agentic-vision
-description: Analyse local image files using Gemini, OpenAI, Anthropic, or local LLM vision models.
+description: |
+  Analyse local image files using Gemini, OpenAI, Anthropic, or local LLM vision models.
   Saves a full markdown report to ./image-analyses/ and returns ONLY a summary and file path to
   keep image bytes completely out of Claude's context.
 
