@@ -16,7 +16,9 @@ class OpenAICompatProvider(AuthProvider):
         base_url: str | None = None,
     ) -> None:
         self._api_key: str = api_key or os.environ.get("OPENAI_API_KEY", "")
-        self._base_url: str = base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        self._base_url: str = base_url or os.environ.get(
+            "OPENAI_BASE_URL", "https://api.openai.com/v1"
+        )
 
     @property
     def name(self) -> str:
