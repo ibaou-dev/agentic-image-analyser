@@ -13,6 +13,7 @@ Usage:
     uv run python scripts/verify_auth.py --vision PATH    # test with a real image
     uv run python scripts/verify_auth.py --api-key        # test GEMINI_API_KEY instead
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,9 +22,7 @@ import json
 import os
 import sys
 import time
-import urllib.request
-import urllib.parse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # httpx is our only non-stdlib dep — installed via uv before running
@@ -34,16 +33,28 @@ except ImportError:
     sys.exit(1)
 
 # ─── Colours ──────────────────────────────────────────────────────────────────
-GREEN  = "\033[32m"
-RED    = "\033[31m"
+GREEN = "\033[32m"
+RED = "\033[31m"
 YELLOW = "\033[33m"
-BOLD   = "\033[1m"
-RESET  = "\033[0m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
 
-def ok(msg: str) -> None:   print(f"  {GREEN}✓{RESET} {msg}")
-def err(msg: str) -> None:  print(f"  {RED}✗{RESET} {msg}")
-def warn(msg: str) -> None: print(f"  {YELLOW}!{RESET} {msg}")
-def info(msg: str) -> None: print(f"  {BOLD}·{RESET} {msg}")
+
+def ok(msg: str) -> None:
+    print(f"  {GREEN}✓{RESET} {msg}")
+
+
+def err(msg: str) -> None:
+    print(f"  {RED}✗{RESET} {msg}")
+
+
+def warn(msg: str) -> None:
+    print(f"  {YELLOW}!{RESET} {msg}")
+
+
+def info(msg: str) -> None:
+    print(f"  {BOLD}·{RESET} {msg}")
+
 
 # ─── OAuth helpers ─────────────────────────────────────────────────────────────
 OAUTH_CREDS_PATH = Path(
@@ -82,7 +93,9 @@ def extract_client_credentials() -> tuple[str, str] | None:
         return client_id, client_secret
 
     # Walk from gemini binary to find oauth2.js
-    import shutil, re
+    import re
+    import shutil
+
     gemini_bin = shutil.which("gemini")
     if not gemini_bin:
         return None
@@ -90,8 +103,8 @@ def extract_client_credentials() -> tuple[str, str] | None:
     search_root = Path(gemini_bin).resolve().parent.parent
     for oauth_js in search_root.rglob("oauth2.js"):
         text = oauth_js.read_text(errors="ignore")
-        ids = re.findall(r'(\d+-[a-z0-9]+\.apps\.googleusercontent\.com)', text)
-        secrets = re.findall(r'(GOCSPX-[A-Za-z0-9_-]+)', text)
+        ids = re.findall(r"(\d+-[a-z0-9]+\.apps\.googleusercontent\.com)", text)
+        secrets = re.findall(r"(GOCSPX-[A-Za-z0-9_-]+)", text)
         if ids and secrets:
             return ids[0], secrets[0]
     return None
@@ -133,7 +146,7 @@ def refresh_token(creds: dict) -> dict:
 
 # ─── API test helpers ──────────────────────────────────────────────────────────
 CODE_ASSIST_BASE = "https://cloudcode-pa.googleapis.com"
-GEMINI_API_BASE  = "https://generativelanguage.googleapis.com"
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com"
 
 
 def test_code_assist_text(token: str, project: str) -> str:
@@ -143,10 +156,12 @@ def test_code_assist_text(token: str, project: str) -> str:
         "model": "gemini-2.5-flash",
         "project": project,
         "request": {
-            "contents": [{
-                "role": "user",
-                "parts": [{"text": "Reply with exactly: OK"}],
-            }],
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": "Reply with exactly: OK"}],
+                }
+            ],
             "generationConfig": {"maxOutputTokens": 10},
         },
     }
@@ -181,13 +196,15 @@ def test_code_assist_vision(token: str, project: str, image_path: str) -> str:
         "model": "gemini-2.5-flash",
         "project": project,
         "request": {
-            "contents": [{
-                "role": "user",
-                "parts": [
-                    {"text": "Describe this image in one sentence."},
-                    {"inline_data": {"mime_type": mime, "data": b64}},
-                ],
-            }],
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": "Describe this image in one sentence."},
+                        {"inline_data": {"mime_type": mime, "data": b64}},
+                    ],
+                }
+            ],
             "generationConfig": {"maxOutputTokens": 100},
         },
     }
@@ -227,13 +244,17 @@ def test_gemini_api_key_text(api_key: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify agentic-vision auth and endpoints")
     parser.add_argument("--refresh", action="store_true", help="Force token refresh before testing")
-    parser.add_argument("--vision", metavar="PATH", help="Also test a vision request with this image")
-    parser.add_argument("--api-key", action="store_true", help="Test GEMINI_API_KEY instead of OAuth")
+    parser.add_argument(
+        "--vision", metavar="PATH", help="Also test a vision request with this image"
+    )
+    parser.add_argument(
+        "--api-key", action="store_true", help="Test GEMINI_API_KEY instead of OAuth"
+    )
     args = parser.parse_args()
 
     project = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
     print(f"\n{BOLD}═══ agentic-vision auth verification ══════════════════════{RESET}")
-    print(f"  Time:    {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
+    print(f"  Time:    {datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')}")
     print(f"  Project: {project or '(not set)'}")
     print()
 
@@ -333,9 +354,11 @@ def main() -> int:
     print(f"\n{BOLD}{'═' * 55}{RESET}")
     if failures == 0:
         print(f"  {GREEN}{BOLD}All checks passed.{RESET} Auth is working correctly.")
-        print(f"  You can proceed to Phase 1 implementation.\n")
+        print("  You can proceed to Phase 1 implementation.\n")
     else:
-        print(f"  {RED}{BOLD}{failures} check(s) failed.{RESET} Fix the issues above before building the engine.\n")
+        print(
+            f"  {RED}{BOLD}{failures} check(s) failed.{RESET} Fix the issues above before building the engine.\n"
+        )
 
     return failures
 

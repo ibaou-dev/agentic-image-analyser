@@ -17,6 +17,7 @@ repos:
           - pydantic>=2.7
           - pydantic-settings>=2.3
           - types-pillow
+          - httpx>=0.27
 
   # ─── General file hygiene ─────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks

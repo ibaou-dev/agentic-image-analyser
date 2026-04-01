@@ -15,6 +15,7 @@ Or via MCP client config:
       }
     }
 """
+
 from __future__ import annotations
 
 try:

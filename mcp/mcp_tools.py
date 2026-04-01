@@ -3,6 +3,7 @@ Tool definitions for the agentic-vision MCP server.
 
 Thin wrappers over the CLI engine — all heavy lifting is in agentic_vision.engine.
 """
+
 from __future__ import annotations
 
 import sys
@@ -167,24 +168,28 @@ def register_tools(mcp: object) -> None:  # mcp: FastMCP instance
             if provider and pcfg.name != provider:
                 continue
             models = model_map.get(pcfg.name, [pcfg.priority_model])
-            providers_info.append({
-                "name": pcfg.name,
-                "models": models,
-                "priority_model": pcfg.priority_model,
-                "fallback_model": pcfg.fallback_model,
-                "enabled": pcfg.enabled,
-            })
+            providers_info.append(
+                {
+                    "name": pcfg.name,
+                    "models": models,
+                    "priority_model": pcfg.priority_model,
+                    "fallback_model": pcfg.fallback_model,
+                    "enabled": pcfg.enabled,
+                }
+            )
 
         # Include unconfigured providers if filtering by specific provider
         if provider and not providers_info:
             models = model_map.get(provider, [])
-            providers_info.append({
-                "name": provider,
-                "models": models,
-                "priority_model": models[0] if models else "unknown",
-                "fallback_model": models[1] if len(models) > 1 else None,
-                "enabled": True,
-            })
+            providers_info.append(
+                {
+                    "name": provider,
+                    "models": models,
+                    "priority_model": models[0] if models else "unknown",
+                    "fallback_model": models[1] if len(models) > 1 else None,
+                    "enabled": True,
+                }
+            )
 
         return {"providers": providers_info}
 
@@ -210,11 +215,13 @@ def register_tools(mcp: object) -> None:  # mcp: FastMCP instance
                 continue
             rl = engine._get_rate_limiter(pcfg)
             status = rl.status()
-            results.append({
-                "name": pcfg.name,
-                "rpm": status.get("rpm", {}),
-                "tpm": status.get("tpm", {}),
-            })
+            results.append(
+                {
+                    "name": pcfg.name,
+                    "rpm": status.get("rpm", {}),
+                    "tpm": status.get("tpm", {}),
+                }
+            )
 
         return {"providers": results}
 

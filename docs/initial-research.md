@@ -58,10 +58,10 @@ The most efficient way to achieve this delegation within Claude Code is through 
 
 The interaction between Claude Code and an MCP server follows a deterministic lifecycle: registration, discovery, invocation, and response.1
 
-1. **Tool Registration**: At startup, an MCP server (e.g., a "Gemini Vision" server) registers a tool called analyze\_ui\_screenshot with a clearly defined input schema (e.g., a file path and a natural language prompt).1  
-2. **Discovery**: When the user asks, "Analyze these 100 screenshots for mobile responsiveness issues," Claude Code reads the registered interface and identifies the analyze\_ui\_screenshot tool as the most relevant capability.1  
-3. **Invocation**: Claude Code sends a call\_tool request to the MCP server. This request contains the path to the screenshot on the local disk.1  
-4. **External Execution**: The MCP server, running as a local Node.js or Python process, reads the image file, communicates with the Google Gemini API, and receives the analysis.21  
+1. **Tool Registration**: At startup, an MCP server (e.g., a "Gemini Vision" server) registers a tool called analyze\_ui\_screenshot with a clearly defined input schema (e.g., a file path and a natural language prompt).1
+2. **Discovery**: When the user asks, "Analyze these 100 screenshots for mobile responsiveness issues," Claude Code reads the registered interface and identifies the analyze\_ui\_screenshot tool as the most relevant capability.1
+3. **Invocation**: Claude Code sends a call\_tool request to the MCP server. This request contains the path to the screenshot on the local disk.1
+4. **External Execution**: The MCP server, running as a local Node.js or Python process, reads the image file, communicates with the Google Gemini API, and receives the analysis.21
 5. **Response Handling**: The server returns the text analysis to Claude. Crucially, the raw image bytes never enter Claude’s context window; only the summarized findings do.21
 
 This "separation of concerns" ensures that Claude Code remains the high-level orchestrator and implementation specialist, while Gemini serves as a specialized vision "sensor".27
@@ -85,8 +85,8 @@ The centminmod repository provides a practical example of a Claude Code skill (a
 
 A typical SKILL.md for this purpose would include instructions to:
 
-* Identify the target images in a specified directory.  
-* Call a secondary CLI tool (e.g., a Python script using the Google Generative AI SDK) for each image.  
+* Identify the target images in a specified directory.
+* Call a secondary CLI tool (e.g., a Python script using the Google Generative AI SDK) for each image.
 * Summarize the findings into a report for the lead Claude agent.23
 
 ### **The Lifecycle Hook Strategy**
@@ -95,11 +95,11 @@ Hooks provide a mechanism to automate analysis deterministically.32 If the user 
 
 JSON
 
-{  
-  "event": "PostToolUse",  
-  "matcher": "mcp\_\_chrome-devtools\_\_screenshot",  
-  "type": "command",  
-  "command": "python3 analyze\_with\_gemini.py $TOOL\_OUTPUT\_PATH"  
+{
+  "event": "PostToolUse",
+  "matcher": "mcp\_\_chrome-devtools\_\_screenshot",
+  "type": "command",
+  "command": "python3 analyze\_with\_gemini.py $TOOL\_OUTPUT\_PATH"
 }
 
 In this flow, the moment Claude captures a screen, the system-level hook sends that image to Gemini. The resulting analysis is then injected back into the conversation, ensuring Claude always has the "visual metadata" without the binary overhead.30
@@ -116,8 +116,8 @@ The feasibility of this approach is reinforced by documented community projects 
 
 This implementation demonstrated significant efficiency gains by using Gemini as a research layer.21
 
-* **Research Task Reduction**: A task that would normally consume 21,000 Claude tokens was reduced to just 800 tokens—a 96% reduction.21  
-* **Proposal and Document Analysis**: Large-scale analysis tasks were reduced from 30,000 to 2,000 Claude tokens.21  
+* **Research Task Reduction**: A task that would normally consume 21,000 Claude tokens was reduced to just 800 tokens—a 96% reduction.21
+* **Proposal and Document Analysis**: Large-scale analysis tasks were reduced from 30,000 to 2,000 Claude tokens.21
 * **Implementation Logic**: The server used a 3-tier priority system—Parallel subagents first, direct delegation second, and Claude self-execution only as a last resort.21
 
 Similarly, the centminmod starter template for Claude Code includes a "Memory Bank" system that utilizes Gemini for architecture decisions while Claude handles the coding implementation.27 This "Dual-Agent" pattern leverages Gemini’s 77.1% score on the ARC-AGI-2 benchmark to ensure strategic oversight is maintained without overwhelming the lead agent's context.5
@@ -149,9 +149,9 @@ Another critical factor is the management of persistent context across hundreds 
 
 The most sophisticated way to use Gemini 3.1 Pro alongside Claude Code is as a "Lead Architect" or "Visual Consultant".23 In this pattern, the developer provides the high-level goal (e.g., "Implement the new design system based on these 50 screenshots") and utilizes a /fullauto command that orchestrates both models.27
 
-1. **Phase 1: Visual Audit**: Claude spawns a subagent to scrape the target site. The subagent captures screenshots using the Chrome DevTools MCP.13  
-2. **Phase 2: Delegated Analysis**: Each screenshot is sent to the Gemini 3.1 Pro MCP server. Gemini provides a structured description of the UI components, spacing, and color values.21  
-3. **Phase 3: Synthesis and Planning**: Claude receives the Gemini metadata and updates the CLAUDE.md or a plan.md file with the technical specifications.27  
+1. **Phase 1: Visual Audit**: Claude spawns a subagent to scrape the target site. The subagent captures screenshots using the Chrome DevTools MCP.13
+2. **Phase 2: Delegated Analysis**: Each screenshot is sent to the Gemini 3.1 Pro MCP server. Gemini provides a structured description of the UI components, spacing, and color values.21
+3. **Phase 3: Synthesis and Planning**: Claude receives the Gemini metadata and updates the CLAUDE.md or a plan.md file with the technical specifications.27
 4. **Phase 4: Implementation**: Claude executes the file edits, creating the React/Tailwind code that matches the visual data provided by Gemini.2
 
 This workflow addresses the user's primary concerns: it saves tokens (by keeping images out of the lead context), saves requests (by consolidating visual data into a single planning phase), and leverages the most capable models for their respective strengths.4
@@ -162,58 +162,58 @@ The analysis of the 2026 agentic ecosystem confirms that delegating image analys
 
 ### **Summary of Actionable Recommendations**
 
-* **Implement an MCP-Based Vision Bridge**: Developers should prioritize the use of an MCP server to communicate with the Gemini API. This is the most portable and efficient method for offloading binary data.21  
-* **Utilize File Paths Over Pasting**: To bypass the current limitations of the Claude Code terminal, all screenshots should be treated as local file resources.3  
-* **Employ a Multi-Agent Architecture**: For tasks involving hundreds of images, the use of Subagents and Agent Teams is critical to prevent context window saturation and session degradation.4  
+* **Implement an MCP-Based Vision Bridge**: Developers should prioritize the use of an MCP server to communicate with the Gemini API. This is the most portable and efficient method for offloading binary data.21
+* **Utilize File Paths Over Pasting**: To bypass the current limitations of the Claude Code terminal, all screenshots should be treated as local file resources.3
+* **Employ a Multi-Agent Architecture**: For tasks involving hundreds of images, the use of Subagents and Agent Teams is critical to prevent context window saturation and session degradation.4
 * **Leverage Caching and Batching**: To further optimize costs, practitioners should utilize the Prompt Caching features offered by both Google and Anthropic, which can reduce input costs by up to 90% for repeated UI patterns.5
 
 By adopting this modular, cross-vendor architecture, developers can overcome the current economic and technical limitations of monolithic agent usage, creating a more robust, cost-effective, and accurate system for visual UI/UX analysis.27
 
 #### **Works cited**
 
-1. Claude Code MCP Integrations: How Tools Connect to AI Coding Agents \- TrueFoundry, accessed March 31, 2026, [https://www.truefoundry.com/blog/claude-code-mcp-integrations-guide](https://www.truefoundry.com/blog/claude-code-mcp-integrations-guide)  
-2. Claude Code overview \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/overview](https://code.claude.com/docs/en/overview)  
-3. \[FEATURE\] Expose pasted image data to hooks and plugins · Issue \#16592 · anthropics/claude-code \- GitHub, accessed March 31, 2026, [https://github.com/anthropics/claude-code/issues/16592](https://github.com/anthropics/claude-code/issues/16592)  
-4. Code execution with MCP: building more efficient AI agents \- Anthropic, accessed March 31, 2026, [https://www.anthropic.com/engineering/code-execution-with-mcp](https://www.anthropic.com/engineering/code-execution-with-mcp)  
-5. Deep Comparison of Gemini 3.1 Pro and Claude Sonnet 4.6: Who is the King of Cost-Performance in 2026? \- Apiyi.com Blog, accessed March 31, 2026, [https://help.apiyi.com/en/gemini-3-1-pro-vs-claude-sonnet-4-6-comparison-en.html](https://help.apiyi.com/en/gemini-3-1-pro-vs-claude-sonnet-4-6-comparison-en.html)  
-6. Gemini 3.1 Pro Vs Sonnet 4.6 Vs Opus 4.6 Vs GPT-5.2 (2026), accessed March 31, 2026, [https://acecloud.ai/blog/gemini-3-1-pro-vs-sonnet-4-6-vs-opus-4-6-vs-gpt-5-2/](https://acecloud.ai/blog/gemini-3-1-pro-vs-sonnet-4-6-vs-opus-4-6-vs-gpt-5-2/)  
-7. Claude vs Gemini: Complete Comparison 2026 \- GuruSup, accessed March 31, 2026, [https://gurusup.com/blog/claude-vs-gemini](https://gurusup.com/blog/claude-vs-gemini)  
-8. Introducing Claude Opus 4.6 \- Anthropic, accessed March 31, 2026, [https://www.anthropic.com/news/claude-opus-4-6](https://www.anthropic.com/news/claude-opus-4-6)  
-9. Gemini 3.1 Pro vs Claude Opus 4.6 vs GPT-5.2: Best AI Model Comparison (2026) | NxCode, accessed March 31, 2026, [https://www.nxcode.io/resources/news/gemini-3-1-pro-vs-claude-opus-4-6-vs-gpt-5-comparison-2026](https://www.nxcode.io/resources/news/gemini-3-1-pro-vs-claude-opus-4-6-vs-gpt-5-comparison-2026)  
-10. Claude Sonnet 4.6 vs Gemini 3.1 Pro Preview \- AI Model Comparison \- OpenRouter, accessed March 31, 2026, [https://openrouter.ai/compare/anthropic/claude-sonnet-4.6/google/gemini-3.1-pro-preview](https://openrouter.ai/compare/anthropic/claude-sonnet-4.6/google/gemini-3.1-pro-preview)  
-11. Gemini 3.1 Pro Leads Most Benchmarks But Trails Claude Opus 4.6 in Some Tasks, accessed March 31, 2026, [https://www.trendingtopics.eu/gemini-3-1-pro-leads-most-benchmarks-but-trails-claude-opus-4-6-in-some-tasks/](https://www.trendingtopics.eu/gemini-3-1-pro-leads-most-benchmarks-but-trails-claude-opus-4-6-in-some-tasks/)  
-12. Every Claude Code Update From March 2026, Explained \- Builder.io, accessed March 31, 2026, [https://www.builder.io/blog/claude-code-updates](https://www.builder.io/blog/claude-code-updates)  
-13. centminmod/claude-code-devcontainers \- GitHub, accessed March 31, 2026, [https://github.com/centminmod/claude-code-devcontainers](https://github.com/centminmod/claude-code-devcontainers)  
-14. Claude Sonnet 4.6 vs Gemini 3.1 Pro Preview \- Pricing & Benchmark Comparison 2026, accessed March 31, 2026, [https://pricepertoken.com/compare/anthropic-claude-sonnet-4.6-vs-google-gemini-3.1-pro-preview](https://pricepertoken.com/compare/anthropic-claude-sonnet-4.6-vs-google-gemini-3.1-pro-preview)  
-15. AI API Pricing Comparison (2026): Grok vs Gemini vs GPT-4o vs Claude | IntuitionLabs, accessed March 31, 2026, [https://intuitionlabs.ai/articles/ai-api-pricing-comparison-grok-gemini-openai-claude](https://intuitionlabs.ai/articles/ai-api-pricing-comparison-grok-gemini-openai-claude)  
-16. Google Gemini API Pricing 2026: Complete Cost Guide per 1M Tokens \- MetaCTO, accessed March 31, 2026, [https://www.metacto.com/blogs/the-true-cost-of-google-gemini-a-guide-to-api-pricing-and-integration](https://www.metacto.com/blogs/the-true-cost-of-google-gemini-a-guide-to-api-pricing-and-integration)  
-17. Vision \- Claude API Docs, accessed March 31, 2026, [https://platform.claude.com/docs/en/build-with-claude/vision](https://platform.claude.com/docs/en/build-with-claude/vision)  
-18. Claude API Pricing Calculator 2026 | Opus 4.6, Sonnet 4.6, Sonnet 4.5 & Haiku 4.5 \- InvertedStone, accessed March 31, 2026, [https://invertedstone.com/calculators/claude-pricing](https://invertedstone.com/calculators/claude-pricing)  
-19. Vertex AI Pricing | Google Cloud, accessed March 31, 2026, [https://cloud.google.com/vertex-ai/generative-ai/pricing](https://cloud.google.com/vertex-ai/generative-ai/pricing)  
-20. Gemini Developer API pricing, accessed March 31, 2026, [https://ai.google.dev/gemini-api/docs/pricing](https://ai.google.dev/gemini-api/docs/pricing)  
-21. I built an MCP server using Claude Code to delegate Claude ..., accessed March 31, 2026, [https://www.reddit.com/r/ClaudeAI/comments/1r5du0w/i\_built\_an\_mcp\_server\_using\_claude\_code\_to/](https://www.reddit.com/r/ClaudeAI/comments/1r5du0w/i_built_an_mcp_server_using_claude_code_to/)  
-22. MCP Protocol Guide (2026): Build AI-Powered Agent Tools | PythonAlchemist, accessed March 31, 2026, [https://www.pythonalchemist.com/blog/mcp-protocol](https://www.pythonalchemist.com/blog/mcp-protocol)  
-23. stared/gemini-claude-skills \- GitHub, accessed March 31, 2026, [https://github.com/QuesmaOrg/quesma-claude-skills](https://github.com/QuesmaOrg/quesma-claude-skills)  
-24. model-context-protocol-resources/guides/mcp-server-development-guide.md at main, accessed March 31, 2026, [https://github.com/cyanheads/model-context-protocol-resources/blob/main/guides/mcp-server-development-guide.md](https://github.com/cyanheads/model-context-protocol-resources/blob/main/guides/mcp-server-development-guide.md)  
-25. Create plugins \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/plugins](https://code.claude.com/docs/en/plugins)  
-26. How the agent loop works \- Claude API Docs, accessed March 31, 2026, [https://platform.claude.com/docs/en/agent-sdk/agent-loop](https://platform.claude.com/docs/en/agent-sdk/agent-loop)  
-27. Made a CLI that lets Claude Code use Gemini 3 Pro as a "lead architect" \- Reddit, accessed March 31, 2026, [https://www.reddit.com/r/ClaudeCode/comments/1paxfl2/made\_a\_cli\_that\_lets\_claude\_code\_use\_gemini\_3\_pro/](https://www.reddit.com/r/ClaudeCode/comments/1paxfl2/made_a_cli_that_lets_claude_code_use_gemini_3_pro/)  
-28. centminmod/my-claude-code-setup: Shared starter template configuration and CLAUDE.md memory bank system for Claude Code \- GitHub, accessed March 31, 2026, [https://github.com/centminmod/my-claude-code-setup](https://github.com/centminmod/my-claude-code-setup)  
-29. A Mental Model for Claude Code: Skills, Subagents, and Plugins | by Dean Blank, accessed March 31, 2026, [https://levelup.gitconnected.com/a-mental-model-for-claude-code-skills-subagents-and-plugins-3dea9924bf05](https://levelup.gitconnected.com/a-mental-model-for-claude-code-skills-subagents-and-plugins-3dea9924bf05)  
-30. Intercept and control agent behavior with hooks \- Claude API Docs, accessed March 31, 2026, [https://platform.claude.com/docs/en/agent-sdk/hooks](https://platform.claude.com/docs/en/agent-sdk/hooks)  
-31. Hooks reference \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks)  
-32. Automate workflows with hooks \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/hooks-guide](https://code.claude.com/docs/en/hooks-guide)  
-33. Claude Code Hooks: A Practical Guide to Workflow Automation \- DataCamp, accessed March 31, 2026, [https://www.datacamp.com/tutorial/claude-code-hooks](https://www.datacamp.com/tutorial/claude-code-hooks)  
-34. Create custom subagents \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/sub-agents](https://code.claude.com/docs/en/sub-agents)  
-35. Claude Code ai-image-creator SKILL \- Google Nano Banana 2 / Gemini 3.1 Image Flash Access : r/ClaudeAI \- Reddit, accessed March 31, 2026, [https://www.reddit.com/r/ClaudeAI/comments/1s44ge7/claude\_code\_aiimagecreator\_skill\_google\_nano/](https://www.reddit.com/r/ClaudeAI/comments/1s44ge7/claude_code_aiimagecreator_skill_google_nano/)  
-36. 10 Must-Have Skills for Claude (and Any Coding Agent) in 2026 \- Medium, accessed March 31, 2026, [https://medium.com/@unicodeveloper/10-must-have-skills-for-claude-and-any-coding-agent-in-2026-b5451b013051](https://medium.com/@unicodeveloper/10-must-have-skills-for-claude-and-any-coding-agent-in-2026-b5451b013051)  
-37. claude-scientific-writer/skills/generate-image/SKILL.md at main \- GitHub, accessed March 31, 2026, [https://github.com/K-Dense-AI/claude-scientific-writer/blob/main/skills/generate-image/SKILL.md](https://github.com/K-Dense-AI/claude-scientific-writer/blob/main/skills/generate-image/SKILL.md)  
-38. Effective context engineering for AI agents \- Anthropic, accessed March 31, 2026, [https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)  
-39. Pasted images visible to vision but not saveable to filesystem \#39572 \- GitHub, accessed March 31, 2026, [https://github.com/anthropics/claude-code/issues/39572](https://github.com/anthropics/claude-code/issues/39572)  
-40. MCP Screenshot Server \- LobeHub, accessed March 31, 2026, [https://lobehub.com/mcp/digital-defiance-mcp-screenshot](https://lobehub.com/mcp/digital-defiance-mcp-screenshot)  
-41. Image Analysis MCP Server \- LobeHub, accessed March 31, 2026, [https://lobehub.com/mcp/jfdasher-image-analysis-mcp](https://lobehub.com/mcp/jfdasher-image-analysis-mcp)  
-42. How Claude Code works \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/how-claude-code-works](https://code.claude.com/docs/en/how-claude-code-works)  
-43. \[BUG\] Valid PNG images downloaded from GitHub issues cause 'Could not process image' error · Issue \#26788 · anthropics/claude-code, accessed March 31, 2026, [https://github.com/anthropics/claude-code/issues/26788](https://github.com/anthropics/claude-code/issues/26788)  
-44. The Claude Code skills actually worth installing right now (March 2026\) \- Reddit, accessed March 31, 2026, [https://www.reddit.com/r/AI\_Agents/comments/1s51cre/the\_claude\_code\_skills\_actually\_worth\_installing/](https://www.reddit.com/r/AI_Agents/comments/1s51cre/the_claude_code_skills_actually_worth_installing/)  
-45. Claude API Pricing 2026: Full Anthropic Cost Breakdown \- MetaCTO, accessed March 31, 2026, [https://www.metacto.com/blogs/anthropic-api-pricing-a-full-breakdown-of-costs-and-integration](https://www.metacto.com/blogs/anthropic-api-pricing-a-full-breakdown-of-costs-and-integration)  
+1. Claude Code MCP Integrations: How Tools Connect to AI Coding Agents \- TrueFoundry, accessed March 31, 2026, [https://www.truefoundry.com/blog/claude-code-mcp-integrations-guide](https://www.truefoundry.com/blog/claude-code-mcp-integrations-guide)
+2. Claude Code overview \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/overview](https://code.claude.com/docs/en/overview)
+3. \[FEATURE\] Expose pasted image data to hooks and plugins · Issue \#16592 · anthropics/claude-code \- GitHub, accessed March 31, 2026, [https://github.com/anthropics/claude-code/issues/16592](https://github.com/anthropics/claude-code/issues/16592)
+4. Code execution with MCP: building more efficient AI agents \- Anthropic, accessed March 31, 2026, [https://www.anthropic.com/engineering/code-execution-with-mcp](https://www.anthropic.com/engineering/code-execution-with-mcp)
+5. Deep Comparison of Gemini 3.1 Pro and Claude Sonnet 4.6: Who is the King of Cost-Performance in 2026? \- Apiyi.com Blog, accessed March 31, 2026, [https://help.apiyi.com/en/gemini-3-1-pro-vs-claude-sonnet-4-6-comparison-en.html](https://help.apiyi.com/en/gemini-3-1-pro-vs-claude-sonnet-4-6-comparison-en.html)
+6. Gemini 3.1 Pro Vs Sonnet 4.6 Vs Opus 4.6 Vs GPT-5.2 (2026), accessed March 31, 2026, [https://acecloud.ai/blog/gemini-3-1-pro-vs-sonnet-4-6-vs-opus-4-6-vs-gpt-5-2/](https://acecloud.ai/blog/gemini-3-1-pro-vs-sonnet-4-6-vs-opus-4-6-vs-gpt-5-2/)
+7. Claude vs Gemini: Complete Comparison 2026 \- GuruSup, accessed March 31, 2026, [https://gurusup.com/blog/claude-vs-gemini](https://gurusup.com/blog/claude-vs-gemini)
+8. Introducing Claude Opus 4.6 \- Anthropic, accessed March 31, 2026, [https://www.anthropic.com/news/claude-opus-4-6](https://www.anthropic.com/news/claude-opus-4-6)
+9. Gemini 3.1 Pro vs Claude Opus 4.6 vs GPT-5.2: Best AI Model Comparison (2026) | NxCode, accessed March 31, 2026, [https://www.nxcode.io/resources/news/gemini-3-1-pro-vs-claude-opus-4-6-vs-gpt-5-comparison-2026](https://www.nxcode.io/resources/news/gemini-3-1-pro-vs-claude-opus-4-6-vs-gpt-5-comparison-2026)
+10. Claude Sonnet 4.6 vs Gemini 3.1 Pro Preview \- AI Model Comparison \- OpenRouter, accessed March 31, 2026, [https://openrouter.ai/compare/anthropic/claude-sonnet-4.6/google/gemini-3.1-pro-preview](https://openrouter.ai/compare/anthropic/claude-sonnet-4.6/google/gemini-3.1-pro-preview)
+11. Gemini 3.1 Pro Leads Most Benchmarks But Trails Claude Opus 4.6 in Some Tasks, accessed March 31, 2026, [https://www.trendingtopics.eu/gemini-3-1-pro-leads-most-benchmarks-but-trails-claude-opus-4-6-in-some-tasks/](https://www.trendingtopics.eu/gemini-3-1-pro-leads-most-benchmarks-but-trails-claude-opus-4-6-in-some-tasks/)
+12. Every Claude Code Update From March 2026, Explained \- Builder.io, accessed March 31, 2026, [https://www.builder.io/blog/claude-code-updates](https://www.builder.io/blog/claude-code-updates)
+13. centminmod/claude-code-devcontainers \- GitHub, accessed March 31, 2026, [https://github.com/centminmod/claude-code-devcontainers](https://github.com/centminmod/claude-code-devcontainers)
+14. Claude Sonnet 4.6 vs Gemini 3.1 Pro Preview \- Pricing & Benchmark Comparison 2026, accessed March 31, 2026, [https://pricepertoken.com/compare/anthropic-claude-sonnet-4.6-vs-google-gemini-3.1-pro-preview](https://pricepertoken.com/compare/anthropic-claude-sonnet-4.6-vs-google-gemini-3.1-pro-preview)
+15. AI API Pricing Comparison (2026): Grok vs Gemini vs GPT-4o vs Claude | IntuitionLabs, accessed March 31, 2026, [https://intuitionlabs.ai/articles/ai-api-pricing-comparison-grok-gemini-openai-claude](https://intuitionlabs.ai/articles/ai-api-pricing-comparison-grok-gemini-openai-claude)
+16. Google Gemini API Pricing 2026: Complete Cost Guide per 1M Tokens \- MetaCTO, accessed March 31, 2026, [https://www.metacto.com/blogs/the-true-cost-of-google-gemini-a-guide-to-api-pricing-and-integration](https://www.metacto.com/blogs/the-true-cost-of-google-gemini-a-guide-to-api-pricing-and-integration)
+17. Vision \- Claude API Docs, accessed March 31, 2026, [https://platform.claude.com/docs/en/build-with-claude/vision](https://platform.claude.com/docs/en/build-with-claude/vision)
+18. Claude API Pricing Calculator 2026 | Opus 4.6, Sonnet 4.6, Sonnet 4.5 & Haiku 4.5 \- InvertedStone, accessed March 31, 2026, [https://invertedstone.com/calculators/claude-pricing](https://invertedstone.com/calculators/claude-pricing)
+19. Vertex AI Pricing | Google Cloud, accessed March 31, 2026, [https://cloud.google.com/vertex-ai/generative-ai/pricing](https://cloud.google.com/vertex-ai/generative-ai/pricing)
+20. Gemini Developer API pricing, accessed March 31, 2026, [https://ai.google.dev/gemini-api/docs/pricing](https://ai.google.dev/gemini-api/docs/pricing)
+21. I built an MCP server using Claude Code to delegate Claude ..., accessed March 31, 2026, [https://www.reddit.com/r/ClaudeAI/comments/1r5du0w/i\_built\_an\_mcp\_server\_using\_claude\_code\_to/](https://www.reddit.com/r/ClaudeAI/comments/1r5du0w/i_built_an_mcp_server_using_claude_code_to/)
+22. MCP Protocol Guide (2026): Build AI-Powered Agent Tools | PythonAlchemist, accessed March 31, 2026, [https://www.pythonalchemist.com/blog/mcp-protocol](https://www.pythonalchemist.com/blog/mcp-protocol)
+23. stared/gemini-claude-skills \- GitHub, accessed March 31, 2026, [https://github.com/QuesmaOrg/quesma-claude-skills](https://github.com/QuesmaOrg/quesma-claude-skills)
+24. model-context-protocol-resources/guides/mcp-server-development-guide.md at main, accessed March 31, 2026, [https://github.com/cyanheads/model-context-protocol-resources/blob/main/guides/mcp-server-development-guide.md](https://github.com/cyanheads/model-context-protocol-resources/blob/main/guides/mcp-server-development-guide.md)
+25. Create plugins \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/plugins](https://code.claude.com/docs/en/plugins)
+26. How the agent loop works \- Claude API Docs, accessed March 31, 2026, [https://platform.claude.com/docs/en/agent-sdk/agent-loop](https://platform.claude.com/docs/en/agent-sdk/agent-loop)
+27. Made a CLI that lets Claude Code use Gemini 3 Pro as a "lead architect" \- Reddit, accessed March 31, 2026, [https://www.reddit.com/r/ClaudeCode/comments/1paxfl2/made\_a\_cli\_that\_lets\_claude\_code\_use\_gemini\_3\_pro/](https://www.reddit.com/r/ClaudeCode/comments/1paxfl2/made_a_cli_that_lets_claude_code_use_gemini_3_pro/)
+28. centminmod/my-claude-code-setup: Shared starter template configuration and CLAUDE.md memory bank system for Claude Code \- GitHub, accessed March 31, 2026, [https://github.com/centminmod/my-claude-code-setup](https://github.com/centminmod/my-claude-code-setup)
+29. A Mental Model for Claude Code: Skills, Subagents, and Plugins | by Dean Blank, accessed March 31, 2026, [https://levelup.gitconnected.com/a-mental-model-for-claude-code-skills-subagents-and-plugins-3dea9924bf05](https://levelup.gitconnected.com/a-mental-model-for-claude-code-skills-subagents-and-plugins-3dea9924bf05)
+30. Intercept and control agent behavior with hooks \- Claude API Docs, accessed March 31, 2026, [https://platform.claude.com/docs/en/agent-sdk/hooks](https://platform.claude.com/docs/en/agent-sdk/hooks)
+31. Hooks reference \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks)
+32. Automate workflows with hooks \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/hooks-guide](https://code.claude.com/docs/en/hooks-guide)
+33. Claude Code Hooks: A Practical Guide to Workflow Automation \- DataCamp, accessed March 31, 2026, [https://www.datacamp.com/tutorial/claude-code-hooks](https://www.datacamp.com/tutorial/claude-code-hooks)
+34. Create custom subagents \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/sub-agents](https://code.claude.com/docs/en/sub-agents)
+35. Claude Code ai-image-creator SKILL \- Google Nano Banana 2 / Gemini 3.1 Image Flash Access : r/ClaudeAI \- Reddit, accessed March 31, 2026, [https://www.reddit.com/r/ClaudeAI/comments/1s44ge7/claude\_code\_aiimagecreator\_skill\_google\_nano/](https://www.reddit.com/r/ClaudeAI/comments/1s44ge7/claude_code_aiimagecreator_skill_google_nano/)
+36. 10 Must-Have Skills for Claude (and Any Coding Agent) in 2026 \- Medium, accessed March 31, 2026, [https://medium.com/@unicodeveloper/10-must-have-skills-for-claude-and-any-coding-agent-in-2026-b5451b013051](https://medium.com/@unicodeveloper/10-must-have-skills-for-claude-and-any-coding-agent-in-2026-b5451b013051)
+37. claude-scientific-writer/skills/generate-image/SKILL.md at main \- GitHub, accessed March 31, 2026, [https://github.com/K-Dense-AI/claude-scientific-writer/blob/main/skills/generate-image/SKILL.md](https://github.com/K-Dense-AI/claude-scientific-writer/blob/main/skills/generate-image/SKILL.md)
+38. Effective context engineering for AI agents \- Anthropic, accessed March 31, 2026, [https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+39. Pasted images visible to vision but not saveable to filesystem \#39572 \- GitHub, accessed March 31, 2026, [https://github.com/anthropics/claude-code/issues/39572](https://github.com/anthropics/claude-code/issues/39572)
+40. MCP Screenshot Server \- LobeHub, accessed March 31, 2026, [https://lobehub.com/mcp/digital-defiance-mcp-screenshot](https://lobehub.com/mcp/digital-defiance-mcp-screenshot)
+41. Image Analysis MCP Server \- LobeHub, accessed March 31, 2026, [https://lobehub.com/mcp/jfdasher-image-analysis-mcp](https://lobehub.com/mcp/jfdasher-image-analysis-mcp)
+42. How Claude Code works \- Claude Code Docs, accessed March 31, 2026, [https://code.claude.com/docs/en/how-claude-code-works](https://code.claude.com/docs/en/how-claude-code-works)
+43. \[BUG\] Valid PNG images downloaded from GitHub issues cause 'Could not process image' error · Issue \#26788 · anthropics/claude-code, accessed March 31, 2026, [https://github.com/anthropics/claude-code/issues/26788](https://github.com/anthropics/claude-code/issues/26788)
+44. The Claude Code skills actually worth installing right now (March 2026\) \- Reddit, accessed March 31, 2026, [https://www.reddit.com/r/AI\_Agents/comments/1s51cre/the\_claude\_code\_skills\_actually\_worth\_installing/](https://www.reddit.com/r/AI_Agents/comments/1s51cre/the_claude_code_skills_actually_worth_installing/)
+45. Claude API Pricing 2026: Full Anthropic Cost Breakdown \- MetaCTO, accessed March 31, 2026, [https://www.metacto.com/blogs/anthropic-api-pricing-a-full-breakdown-of-costs-and-integration](https://www.metacto.com/blogs/anthropic-api-pricing-a-full-breakdown-of-costs-and-integration)
 46. Gemini 3.1 Pro Cost: Complete 2026 Pricing Guide \- GlobalGPT, accessed March 31, 2026, [https://www.glbgpt.com/hub/gemini-3-1-pro-cost-complete-2026-pricing-guide/](https://www.glbgpt.com/hub/gemini-3-1-pro-cost-complete-2026-pricing-guide/)

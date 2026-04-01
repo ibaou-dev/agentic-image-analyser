@@ -73,6 +73,14 @@ no_implicit_reexport = false
 module = ["anthropic", "anthropic.*", "openai", "openai.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["httpx", "httpx.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["mcp", "mcp.*", "fastmcp", "fastmcp.*"]
+ignore_missing_imports = true
+
 # ─── Pytest ──────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
