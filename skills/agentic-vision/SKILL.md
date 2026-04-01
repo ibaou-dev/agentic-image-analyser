@@ -1,20 +1,32 @@
 ---
 name: agentic-vision
-description: |
-  Analyse local image files using Gemini via the Code Assist endpoint (no API key needed —
-  uses the same OAuth credentials as the Gemini CLI).
-  Saves a full markdown report to ./image-analyses/ and returns ONLY a summary and file path to
-  keep image bytes completely out of Claude's context.
-
-  TRIGGER when:
-  - User asks to "analyse", "describe", "inspect", or "review" an image or screenshot
-  - A tool (chrome-devtools, screenshot MCP, etc.) has produced an image file that needs interpretation
-  - User references a local image path (PNG, JPEG, WEBP, GIF)
-  - You have captured a screenshot and need to interpret its contents
-
-  DO NOT TRIGGER when:
-  - The image has already been pasted into context (Claude can see it directly)
-  - The task is to edit or generate an image (not analyse one)
+description:
+  "Analyses local image files (PNG, JPEG, WEBP, GIF) using Gemini via the Code
+  Assist endpoint — no API key needed, uses existing Gemini CLI OAuth credentials.
+  Saves a full markdown report to ./image-analyses/ and returns ONLY a summary
+  and file path, keeping image bytes completely out of Claude's context (~7x
+  context savings per image). Use this skill when asked to analyse, describe,
+  inspect, or review a local image or screenshot, or when a tool (chrome-devtools,
+  screenshot MCP, etc.) has produced an image file that needs interpretation.
+  Do NOT trigger when the image is already pasted into context or when the task
+  is to edit or generate an image."
+user-invocable: false
+license: MIT
+compatibility:
+  Designed for Claude Code. Requires uv and Gemini CLI OAuth credentials
+  (~/.gemini/oauth_creds.json). Works on Linux, macOS, WSL2.
+metadata:
+  author: ibaou-dev
+  version: "1.0.1"
+  openclaw:
+    emoji: "🔍"
+    homepage: https://github.com/ibaou-dev/agentic-image-analyser
+    requires:
+      bins:
+        - uv
+        - python3
+    install: []
+allowed-tools: Bash(uv:*) Bash(python3:*) Read
 ---
 
 # agentic-vision
@@ -192,7 +204,7 @@ The `agentic-vision` CLI package provides additional providers (OpenAI, Anthropi
 an MCP server, and auth management commands:
 
 ```bash
-uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser@v1.0.0"
+uv tool install "agentic-vision @ git+https://github.com/ibaou-dev/agentic-image-analyser@v1.0.1"
 ```
 
 After install:
