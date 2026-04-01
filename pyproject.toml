@@ -115,6 +115,8 @@ omit = [
     "*/cli.py",
     "*/engine.py",
     "*/auth/gemini_oauth.py",
+    "*/auth/gemini_login.py",
+    "*/auth/code_assist.py",
     "*/_mcp.py",
     "*/_mcp_tools.py",
 ]

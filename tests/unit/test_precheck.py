@@ -71,9 +71,12 @@ class TestCliInstalledCheck:
 
 
 class TestAuthCheck:
-    def test_passes_when_oauth_creds_exist(self) -> None:
-        # ~/.gemini/oauth_creds.json exists in this environment
-        result = check_auth_available()
+    def test_passes_when_oauth_creds_exist(self, tmp_path: Path) -> None:
+        creds = tmp_path / ".gemini" / "oauth_creds.json"
+        creds.parent.mkdir()
+        creds.write_text("{}")
+        with patch("agentic_vision.precheck.Path.home", return_value=tmp_path):
+            result = check_auth_available()
         assert result.passed is True
 
     def test_passes_when_env_var_set(self, tmp_path: Path) -> None:
